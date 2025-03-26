@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+  
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    
+    --primary: 271 100% 45%;
+    --primary-light: 271 100% 55%;
+    --primary-dark: 271 100% 35%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 174 100% 44%;
+    --secondary-light: 174 100% 54%;
+    --secondary-dark: 174 100% 34%;
+    --secondary-foreground: 0 0% 0%;
+    
+    --accent: 14 100% 50%;
+    --accent-light: 14 100% 60%;
+    --accent-dark: 14 100% 40%;
+    --accent-foreground: 0 0% 100%;
+    
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 100%;
+    
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 240 4% 16%;
+    
+    --radius: 0.5rem;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.font-display {
+  font-family: 'Poppins', sans-serif;
+}
