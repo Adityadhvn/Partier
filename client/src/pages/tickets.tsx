@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Ticket, Event, TicketType } from "@shared/schema";
-import { Calendar, MapPin, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, Ticket as TicketIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,7 +58,7 @@ export default function Tickets() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
-                    <Ticket className="h-8 w-8 text-neutral-400" />
+                    <TicketIcon className="h-8 w-8 text-neutral-400" />
                   </div>
                   <h3 className="font-display font-semibold text-white mb-2">No Upcoming Tickets</h3>
                   <p className="text-neutral-400 mb-6">You don't have any upcoming events.</p>
@@ -94,7 +94,7 @@ export default function Tickets() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
-                    <Ticket className="h-8 w-8 text-neutral-400" />
+                    <TicketIcon className="h-8 w-8 text-neutral-400" />
                   </div>
                   <h3 className="font-display font-semibold text-white mb-2">No Past Tickets</h3>
                   <p className="text-neutral-400 mb-6">You haven't attended any events yet.</p>
