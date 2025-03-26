@@ -53,23 +53,28 @@ export default function EventDetails() {
           alt={event.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-black/40 to-transparent"></div>
+        {event.featured && (
+          <div className="absolute bottom-4 right-4">
+            <div className="text-primary luxury-accent text-xl transform -rotate-6 drop-shadow-lg">VIP</div>
+          </div>
+        )}
         
         <Button 
           size="icon"
           variant="outline"
-          className="absolute top-12 left-4 w-10 h-10 rounded-full bg-black/50 border-0"
+          className="absolute top-12 left-4 w-10 h-10 rounded-full bg-black/70 border border-primary/30 shadow-md backdrop-blur-sm transition-all hover:border-primary"
           onClick={handleBackClick}
         >
-          <ArrowLeft className="text-white h-5 w-5" />
+          <ArrowLeft className="text-primary h-5 w-5" />
         </Button>
         
         <Button 
           size="icon"
           variant="outline"
-          className="absolute top-12 right-4 w-10 h-10 rounded-full bg-black/50 border-0"
+          className="absolute top-12 right-4 w-10 h-10 rounded-full bg-black/70 border border-primary/30 shadow-md backdrop-blur-sm transition-all hover:border-primary"
         >
-          <Share className="text-white h-5 w-5" />
+          <Share className="text-primary h-5 w-5" />
         </Button>
       </div>
       
@@ -161,7 +166,7 @@ export default function EventDetails() {
                   <img 
                     src={performer.imageUrl} 
                     alt={performer.name} 
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover performer-image border border-primary/30"
                   />
                   <div className="ml-3">
                     <p className="text-white font-medium event-title">{performer.name}</p>
