@@ -137,7 +137,7 @@ interface FeaturedEventCardProps {
 function FeaturedEventCard({ event, onClick }: FeaturedEventCardProps) {
   return (
     <div 
-      className="relative min-w-[280px] h-48 rounded-xl overflow-hidden group cursor-pointer"
+      className="relative min-w-[280px] h-48 rounded-xl overflow-hidden group cursor-pointer border border-primary/30 shadow-lg shadow-primary/5"
       onClick={onClick}
     >
       <img 
@@ -146,7 +146,7 @@ function FeaturedEventCard({ event, onClick }: FeaturedEventCardProps) {
         className="w-full h-full object-cover brightness-75 group-hover:scale-105 transition-transform duration-300"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex flex-col justify-end">
-        <Badge className="bg-[#FF3D00] hover:bg-[#FF3D00] px-2 py-1 rounded text-xs font-medium inline-block w-fit mb-2">
+        <Badge className="bg-primary hover:bg-[#D3047E] text-black font-bold px-2 py-1 rounded text-xs inline-block w-fit mb-2 border border-white/20">
           {event.featured ? 'FEATURED' : 'HOT'}
         </Badge>
         <h3 className="event-title font-semibold text-white">{event.title}</h3>
@@ -155,7 +155,7 @@ function FeaturedEventCard({ event, onClick }: FeaturedEventCardProps) {
           <span>{format(new Date(event.date), 'MMMM d, h:mm a')}</span>
         </div>
         <div className="flex items-center mt-1 text-sm text-neutral-300">
-          <MapPin className="h-3 w-3 mr-1" />
+          <MapPin className="h-3 w-3 mr-1 text-primary" />
           <span>{event.location}</span>
         </div>
       </div>
@@ -183,27 +183,27 @@ function EventCard({ event, onGetTickets, onClick }: EventCardProps) {
   const price = "25.00"; // In a real app, this would come from the API
 
   return (
-    <div className="bg-neutral-800 rounded-xl p-4 mb-4 flex cursor-pointer" onClick={handleClick}>
+    <div className="bg-neutral-800 rounded-xl p-4 mb-4 flex cursor-pointer border border-primary/20 hover:border-primary/40 transition-all duration-300" onClick={handleClick}>
       <img 
         src={event.imageUrl} 
         alt={event.title} 
-        className="h-24 w-24 rounded-lg object-cover"
+        className="h-24 w-24 rounded-lg object-cover hover:scale-[1.03] transition-transform duration-300"
       />
       <div className="ml-4 flex-1">
-        <h3 className="font-display font-semibold text-white">{event.title}</h3>
+        <h3 className="event-title font-semibold text-white">{event.title}</h3>
         <div className="flex items-center mt-1 text-sm text-neutral-400">
-          <Calendar className="h-3 w-3 mr-1" />
+          <Calendar className="h-3 w-3 mr-1 text-primary" />
           <span>{format(new Date(event.date), 'MMMM d, h:mm a')}</span>
         </div>
         <div className="flex items-center mt-1 text-sm text-neutral-400">
-          <MapPin className="h-3 w-3 mr-1" />
+          <MapPin className="h-3 w-3 mr-1 text-primary" />
           <span>{event.location}</span>
         </div>
         <div className="flex justify-between items-center mt-2">
-          <span className="text-white font-medium">${price}</span>
+          <span className="text-primary font-medium luxury-accent">${price}</span>
           <Button 
             size="sm"
-            className="bg-primary hover:bg-primary-light text-white text-sm py-1 px-3 rounded-full font-medium transition-colors h-8"
+            className="bg-primary hover:bg-[#D3047E] text-white text-sm py-1 px-3 rounded-full font-medium transition-colors h-8 btn-hover-effect"
             onClick={handleButtonClick}
           >
             Get Tickets
