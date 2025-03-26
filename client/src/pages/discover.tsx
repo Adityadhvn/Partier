@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Event } from "@shared/schema";
+import type { Event } from "@shared/schema";
 
 export default function Discover() {
   const [, navigate] = useLocation();
@@ -33,14 +33,17 @@ export default function Discover() {
       <header className="px-4 pt-12 pb-4 bg-neutral-900 sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-display font-bold text-2xl text-white">Discover</h1>
-            <p className="text-neutral-400 text-sm">Find and book the best events</p>
+            <h1 className="luxury-header font-bold text-2xl text-white">
+              <span className="luxury-accent mr-2 text-primary">Vibe</span>
+              Discover
+            </h1>
+            <p className="text-neutral-400 text-sm font-standard">Find and book the best events</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button size="icon" variant="outline" className="rounded-full h-10 w-10 bg-neutral-800 border-0">
+            <Button size="icon" variant="outline" className="rounded-full h-10 w-10 bg-neutral-800 border-0 btn-hover-effect">
               <Search className="text-neutral-400 h-5 w-5" />
             </Button>
-            <Button size="icon" variant="outline" className="rounded-full h-10 w-10 bg-neutral-800 border-0">
+            <Button size="icon" variant="outline" className="rounded-full h-10 w-10 bg-neutral-800 border-0 btn-hover-effect">
               <Bell className="text-neutral-400 h-5 w-5" />
             </Button>
           </div>
@@ -70,7 +73,9 @@ export default function Discover() {
         {/* Featured Events */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-semibold text-xl text-white">Featured Events</h2>
+            <h2 className="luxury-header font-semibold text-xl text-white">
+              <span className="luxury-accent text-primary">Featured</span> Events
+            </h2>
             <Button variant="link" className="text-secondary text-sm font-medium p-0">
               See all
             </Button>
@@ -98,7 +103,9 @@ export default function Discover() {
         
         {/* Trending Now */}
         <section className="mb-8">
-          <h2 className="font-display font-semibold text-xl text-white mb-4">Trending Now</h2>
+          <h2 className="luxury-header font-semibold text-xl text-white mb-4">
+            <span className="luxury-accent text-primary">Trending</span> Now
+          </h2>
           
           {eventsLoading ? (
             <>
@@ -142,9 +149,9 @@ function FeaturedEventCard({ event, onClick }: FeaturedEventCardProps) {
         <Badge className="bg-[#FF3D00] hover:bg-[#FF3D00] px-2 py-1 rounded text-xs font-medium inline-block w-fit mb-2">
           {event.featured ? 'FEATURED' : 'HOT'}
         </Badge>
-        <h3 className="font-display font-semibold text-white">{event.title}</h3>
+        <h3 className="event-title font-semibold text-white">{event.title}</h3>
         <div className="flex items-center mt-1 text-sm text-neutral-300">
-          <Calendar className="h-3 w-3 mr-1" />
+          <Calendar className="h-3 w-3 mr-1 text-primary" />
           <span>{format(new Date(event.date), 'MMMM d, h:mm a')}</span>
         </div>
         <div className="flex items-center mt-1 text-sm text-neutral-300">

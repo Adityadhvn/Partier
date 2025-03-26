@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,10 +18,11 @@
     --background: 240 10% 4%;
     --foreground: 0 0% 98%;
     
-    --primary: 271 100% 45%;
-    --primary-light: 271 100% 55%;
-    --primary-dark: 271 100% 35%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary color as #F1C232 (gold) */
+    --primary: 45 87% 57%;
+    --primary-light: 45 87% 65%;
+    --primary-dark: 45 87% 50%;
+    --primary-foreground: 240 10% 4%;
     
     --secondary: 174 100% 44%;
     --secondary-light: 174 100% 54%;
@@ -50,6 +54,14 @@
   }
 }
 
+/* Custom button hover state */
+.btn-hover-effect:hover, 
+button:hover:not(.disabled), 
+[role="button"]:hover:not(.disabled) {
+  background-color: #D3047E !important;
+  transition: background-color 0.2s ease-in-out;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -68,5 +80,31 @@
 }
 
 .font-display {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-calligraphy {
+  font-family: 'Great Vibes', cursive;
+}
+
+.font-standard {
   font-family: 'Poppins', sans-serif;
+}
+
+/* Luxury accents */
+.luxury-header {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.02em;
+}
+
+.luxury-accent {
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.event-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
