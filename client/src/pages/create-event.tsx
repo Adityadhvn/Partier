@@ -12,7 +12,14 @@ import { InsertEvent, InsertTicketType } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 const createEventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -29,23 +36,30 @@ type CreateEventFormValues = z.infer<typeof createEventSchema>;
 export default function CreateEvent() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   // For simplicity, we're using a fixed organizer ID
   // In a real app, this would come from auth context
   const organizerId = 2;
-  
+
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
-  const [ticketTypes, setTicketTypes] = useState<{
-    name: string;
-    description: string;
-    price: string;
-    available: number;
-  }[]>([
-    { name: "General Admission", description: "Basic entry to the event", price: "25.00", available: 100 }
+
+  const [ticketTypes, setTicketTypes] = useState<
+    {
+      name: string;
+      description: string;
+      price: string;
+      available: number;
+    }[]
+  >([
+    {
+      name: "General Admission",
+      description: "Basic entry to the event",
+      price: "25.00",
+      available: 100,
+    },
   ]);
-  
+
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
     defaultValues: {
@@ -56,9 +70,9 @@ export default function CreateEvent() {
       time: "",
       location: "",
       address: "",
-    }
+    },
   });
-  
+
   const eventMutation = useMutation({
     mutationFn: async (data: InsertEvent) => {
       const response = await apiRequest("POST", "/api/events", data);
@@ -67,17 +81,18 @@ export default function CreateEvent() {
     onSuccess: async (newEvent) => {
       // Create ticket types for the new event
       for (const ticketType of ticketTypes) {
+        // Create the ticket type data matching the expected schema types
         const ticketTypeData: InsertTicketType = {
           eventId: newEvent.id,
           name: ticketType.name,
           description: ticketType.description,
-          price: ticketType.price,
-          available: ticketType.available
+          price: ticketType.price, // The schema will handle string-to-number conversion
+          available: ticketType.available,
         };
-        
+
         await apiRequest("POST", "/api/ticket-types", ticketTypeData);
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       toast({
         title: "Event Created",
@@ -88,12 +103,12 @@ export default function CreateEvent() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create event. Please try again.",
+        description: "Failed to create event. Try again Later",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const handleSubmit = (formValues: CreateEventFormValues) => {
     if (tags.length === 0) {
       toast({
@@ -103,7 +118,7 @@ export default function CreateEvent() {
       });
       return;
     }
-    
+
     if (ticketTypes.length === 0) {
       toast({
         title: "Missing Ticket Types",
@@ -112,61 +127,80 @@ export default function CreateEvent() {
       });
       return;
     }
-    
+
     // Combine date and time
     const dateTimeString = `${formValues.date}T${formValues.time}:00`;
-    
-    const eventData: InsertEvent = {
-      title: formValues.title,
-      description: formValues.description,
-      imageUrl: formValues.imageUrl,
-      date: new Date(dateTimeString),
-      location: formValues.location,
-      address: formValues.address,
-      organizedById: organizerId,
-      featured: false,
-      tags
-    };
-    
-    eventMutation.mutate(eventData);
+
+    try {
+      // Handle the date conversion properly
+      const dateObj = new Date(dateTimeString);
+      
+      if (isNaN(dateObj.getTime())) {
+        throw new Error("Invalid date format");
+      }
+
+      const eventData: InsertEvent = {
+        title: formValues.title,
+        description: formValues.description,
+        imageUrl: formValues.imageUrl,
+        date: dateObj,
+        location: formValues.location,
+        address: formValues.address,
+        organizedById: organizerId,
+        featured: false,
+        tags,
+      };
+      
+      eventMutation.mutate(eventData);
+    } catch (error) {
+      toast({
+        title: "Date Error",
+        description: "Invalid date or time format. Please check your inputs.",
+        variant: "destructive",
+      });
+    }
   };
-  
+
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
       setTagInput("");
     }
   };
-  
+
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
-  
+
   const handleAddTicketType = () => {
     setTicketTypes([
       ...ticketTypes,
-      { name: "", description: "", price: "", available: 0 }
+      { name: "", description: "", price: "", available: 0 },
     ]);
   };
-  
+
   const handleRemoveTicketType = (index: number) => {
     setTicketTypes(ticketTypes.filter((_, i) => i !== index));
   };
-  
-  const handleTicketTypeChange = (index: number, field: keyof typeof ticketTypes[0], value: string | number) => {
+
+  const handleTicketTypeChange = (
+    index: number,
+    field: keyof (typeof ticketTypes)[0],
+    value: string | number,
+  ) => {
     const newTicketTypes = [...ticketTypes];
     newTicketTypes[index][field] = value as never;
     setTicketTypes(newTicketTypes);
   };
-  
+
   const handleBackClick = () => {
     navigate("/profile");
   };
-  
+
   return (
     <div className="flex-1 flex flex-col pb-20">
       <header className="px-4 pt-12 pb-4 bg-neutral-900 sticky top-0 z-10 flex items-center">
-        <Button 
+        <Button
           size="icon"
           variant="outline"
           className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center mr-4 border-0"
@@ -174,12 +208,17 @@ export default function CreateEvent() {
         >
           <ArrowLeft className="text-white h-5 w-5" />
         </Button>
-        <h1 className="font-display font-bold text-xl text-white">Create Event</h1>
+        <h1 className="font-display font-bold text-xl text-white">
+          Create Event
+        </h1>
       </header>
 
       <main className="flex-1 px-4 py-4">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
             {/* Basic Event Info */}
             <div className="space-y-4">
               <FormField
@@ -189,8 +228,8 @@ export default function CreateEvent() {
                   <FormItem>
                     <FormLabel className="text-white">Event Title</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="E.g., Summer Bass Night" 
+                      <Input
+                        placeholder="E.g., Summer Bass Night"
                         className="bg-neutral-800 border-0 text-white"
                         {...field}
                       />
@@ -199,7 +238,7 @@ export default function CreateEvent() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -207,8 +246,8 @@ export default function CreateEvent() {
                   <FormItem>
                     <FormLabel className="text-white">Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Describe your event..." 
+                      <Textarea
+                        placeholder="Describe your event..."
                         className="bg-neutral-800 border-0 text-white min-h-[120px]"
                         {...field}
                       />
@@ -217,16 +256,18 @@ export default function CreateEvent() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white">Cover Image URL</FormLabel>
+                    <FormLabel className="text-white">
+                      Cover Image URL
+                    </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="https://..." 
+                      <Input
+                        placeholder="https://..."
                         className="bg-neutral-800 border-0 text-white"
                         {...field}
                       />
@@ -236,7 +277,7 @@ export default function CreateEvent() {
                 )}
               />
             </div>
-            
+
             {/* Date and Time */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -247,8 +288,8 @@ export default function CreateEvent() {
                     <FormLabel className="text-white">Date</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input 
-                          type="date" 
+                        <Input
+                          type="date"
                           className="bg-neutral-800 border-0 text-white"
                           {...field}
                         />
@@ -259,7 +300,7 @@ export default function CreateEvent() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="time"
@@ -268,8 +309,8 @@ export default function CreateEvent() {
                     <FormLabel className="text-white">Time</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input 
-                          type="time" 
+                        <Input
+                          type="time"
                           className="bg-neutral-800 border-0 text-white"
                           {...field}
                         />
@@ -281,7 +322,7 @@ export default function CreateEvent() {
                 )}
               />
             </div>
-            
+
             {/* Location */}
             <div className="space-y-4">
               <FormField
@@ -292,8 +333,8 @@ export default function CreateEvent() {
                     <FormLabel className="text-white">Venue Name</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input 
-                          placeholder="E.g., Echo Lounge" 
+                        <Input
+                          placeholder="E.g., Echo Lounge"
                           className="bg-neutral-800 border-0 text-white"
                           {...field}
                         />
@@ -304,7 +345,7 @@ export default function CreateEvent() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="address"
@@ -312,8 +353,8 @@ export default function CreateEvent() {
                   <FormItem>
                     <FormLabel className="text-white">Address</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Full venue address" 
+                      <Input
+                        placeholder="Full venue address"
                         className="bg-neutral-800 border-0 text-white"
                         {...field}
                       />
@@ -323,13 +364,16 @@ export default function CreateEvent() {
                 )}
               />
             </div>
-            
+
             {/* Tags */}
             <div>
               <Label className="text-white mb-2 block">Tags</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map((tag) => (
-                  <div key={tag} className="bg-neutral-700 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                  <div
+                    key={tag}
+                    className="bg-neutral-700 text-white px-3 py-1 rounded-full text-sm flex items-center"
+                  >
                     {tag}
                     <Button
                       type="button"
@@ -351,7 +395,7 @@ export default function CreateEvent() {
                     placeholder="Add a tag (e.g., Electronic, Live Music)"
                     className="bg-neutral-800 border-0 text-white"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleAddTag();
                       }
@@ -369,7 +413,7 @@ export default function CreateEvent() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Ticket Types */}
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -385,10 +429,13 @@ export default function CreateEvent() {
                   Add Type
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 {ticketTypes.map((ticketType, index) => (
-                  <div key={index} className="bg-neutral-800 rounded-xl p-4 relative">
+                  <div
+                    key={index}
+                    className="bg-neutral-800 rounded-xl p-4 relative"
+                  >
                     <Button
                       type="button"
                       variant="ghost"
@@ -398,22 +445,38 @@ export default function CreateEvent() {
                     >
                       <X className="h-4 w-4" />
                     </Button>
-                    
+
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <Label className="text-neutral-400 text-sm mb-1 block">Name</Label>
+                        <Label className="text-neutral-400 text-sm mb-1 block">
+                          Name
+                        </Label>
                         <Input
                           value={ticketType.name}
-                          onChange={(e) => handleTicketTypeChange(index, 'name', e.target.value)}
+                          onChange={(e) =>
+                            handleTicketTypeChange(
+                              index,
+                              "name",
+                              e.target.value,
+                            )
+                          }
                           placeholder="E.g., General Admission"
                           className="bg-neutral-700 border-0 text-white"
                         />
                       </div>
                       <div>
-                        <Label className="text-neutral-400 text-sm mb-1 block">Price ($)</Label>
+                        <Label className="text-neutral-400 text-sm mb-1 block">
+                          Price ($)
+                        </Label>
                         <Input
                           value={ticketType.price}
-                          onChange={(e) => handleTicketTypeChange(index, 'price', e.target.value)}
+                          onChange={(e) =>
+                            handleTicketTypeChange(
+                              index,
+                              "price",
+                              e.target.value,
+                            )
+                          }
                           placeholder="E.g., 25.00"
                           className="bg-neutral-700 border-0 text-white"
                           type="number"
@@ -422,22 +485,38 @@ export default function CreateEvent() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4 mb-2">
                       <div>
-                        <Label className="text-neutral-400 text-sm mb-1 block">Description</Label>
+                        <Label className="text-neutral-400 text-sm mb-1 block">
+                          Description
+                        </Label>
                         <Input
                           value={ticketType.description}
-                          onChange={(e) => handleTicketTypeChange(index, 'description', e.target.value)}
+                          onChange={(e) =>
+                            handleTicketTypeChange(
+                              index,
+                              "description",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Brief description"
                           className="bg-neutral-700 border-0 text-white"
                         />
                       </div>
                       <div>
-                        <Label className="text-neutral-400 text-sm mb-1 block">Available Tickets</Label>
+                        <Label className="text-neutral-400 text-sm mb-1 block">
+                          Available Tickets
+                        </Label>
                         <Input
                           value={ticketType.available}
-                          onChange={(e) => handleTicketTypeChange(index, 'available', parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handleTicketTypeChange(
+                              index,
+                              "available",
+                              parseInt(e.target.value) || 0,
+                            )
+                          }
                           placeholder="Number of tickets"
                           className="bg-neutral-700 border-0 text-white"
                           type="number"
@@ -449,7 +528,7 @@ export default function CreateEvent() {
                 ))}
               </div>
             </div>
-            
+
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary-light text-white font-medium py-3 rounded-xl transition-colors"

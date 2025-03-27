@@ -30,8 +30,22 @@ export const events = pgTable("events", {
   tags: text("tags").array().notNull(),
 });
 
-export const insertEventSchema = createInsertSchema(events).omit({
+// Create a base schema with omitted fields
+const baseInsertEventSchema = createInsertSchema(events).omit({
   id: true,
+});
+
+// Create a modified schema that transforms the date field
+export const insertEventSchema = baseInsertEventSchema.extend({
+  date: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date()
+  ),
 });
 
 // Ticket types model
@@ -44,8 +58,21 @@ export const ticketTypes = pgTable("ticket_types", {
   available: integer("available").notNull(),
 });
 
-export const insertTicketTypeSchema = createInsertSchema(ticketTypes).omit({
+// Create a base schema with omitted fields
+const baseInsertTicketTypeSchema = createInsertSchema(ticketTypes).omit({
   id: true,
+});
+
+// Create a modified schema that handles numeric values 
+export const insertTicketTypeSchema = baseInsertTicketTypeSchema.extend({
+  price: z.preprocess(
+    (arg) => typeof arg === 'string' ? parseFloat(arg) : arg,
+    z.number()
+  ),
+  available: z.preprocess(
+    (arg) => typeof arg === 'string' ? parseInt(arg) : arg,
+    z.number()
+  ),
 });
 
 // Performer model
@@ -75,9 +102,15 @@ export const tickets = pgTable("tickets", {
   paymentDetails: json("payment_details").notNull(),
 });
 
-export const insertTicketSchema = createInsertSchema(tickets).omit({
+// Create a base schema with omitted fields
+const baseInsertTicketSchema = createInsertSchema(tickets).omit({
   id: true,
   purchaseDate: true,
+});
+
+// Create a modified schema for ticket
+export const insertTicketSchema = baseInsertTicketSchema.extend({
+  // Add any additional field processing here if needed in the future
 });
 
 // Types
