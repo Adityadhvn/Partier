@@ -9,12 +9,18 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  Calendar,
+  Edit,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useQuery } from "@tanstack/react-query";
+import type { Event } from "@shared/schema";
+import { format } from "date-fns";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -29,8 +35,24 @@ export default function Profile() {
     isOrganizer: true,
   };
 
+  // Fetch user's events (for organizers)
+  const { data: organizerEvents, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ['/api/organizer', user.id, 'events'],
+    queryFn: () => fetch(`/api/organizer/${user.id}/events`).then(res => res.json()),
+    enabled: user.isOrganizer,
+  });
+
   const handleCreateEventClick = () => {
     navigate("/create-event");
+  };
+
+  const handleEditEventClick = (eventId: number) => {
+    navigate(`/edit-event/${eventId}`);
+    // Note: The edit-event route and page would need to be implemented separately
+  };
+
+  const handleViewEventClick = (eventId: number) => {
+    navigate(`/event/${eventId}`);
   };
 
   const handleScannerClick = () => {
@@ -43,6 +65,11 @@ export default function Profile() {
       description: "You have been successfully logged out.",
     });
     // In a real app, this would clear auth state
+  };
+  
+  const formatEventDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return format(date, 'MMM d, yyyy');
   };
 
   return (
@@ -83,7 +110,7 @@ export default function Profile() {
               >
                 <div className="flex items-center">
                   <span className="bg-neutral-700 w-8 h-8 rounded-full flex items-center justify-center mr-3">
-                    <CreditCard className="h-4 w-4 text-secondary" />
+                    <Calendar className="h-4 w-4 text-secondary" />
                   </span>
                   <span>Create New Event</span>
                 </div>
@@ -119,6 +146,88 @@ export default function Profile() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-neutral-500" />
               </button>
+            </div>
+          </div>
+        )}
+        
+        {/* My Events (for organizers) */}
+        {user.isOrganizer && (
+          <div className="mb-6">
+            <h3 className="font-medium text-neutral-400 uppercase text-sm mb-3">
+              My Events
+            </h3>
+            
+            <div className="space-y-4">
+              {isLoadingEvents ? (
+                // Loading skeleton
+                <>
+                  <div className="bg-neutral-800 animate-pulse rounded-xl h-24"></div>
+                  <div className="bg-neutral-800 animate-pulse rounded-xl h-24"></div>
+                </>
+              ) : organizerEvents?.length > 0 ? (
+                // Event list
+                organizerEvents.map((event: Event) => (
+                  <div 
+                    key={event.id}
+                    className="bg-gradient-to-r from-neutral-800 to-neutral-800/70 rounded-xl p-4 border border-neutral-700 hover:border-primary/40 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-display font-bold text-white">{event.title}</h4>
+                        <p className="text-neutral-400 text-sm">{formatEventDate(event.date)}</p>
+                        
+                        <div className="flex gap-2 mt-2">
+                          {event.tags && event.tags.length > 0 ? (
+                            <Badge variant="outline" className="bg-black/50 text-primary border-primary/30">
+                              {event.tags[0]}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-black/50 text-primary border-primary/30">
+                              Event
+                            </Badge>
+                          )}
+                          {event.featured && (
+                            <Badge className="bg-gradient-to-r from-primary to-amber-500 text-black">
+                              Featured
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-full bg-black/40 hover:bg-primary/20 hover:text-primary"
+                          onClick={() => handleEditEventClick(event.id)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-black/40 hover:bg-primary/20 hover:text-primary"
+                          onClick={() => handleViewEventClick(event.id)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // No events
+                <div className="bg-neutral-800/50 rounded-xl p-6 text-center border border-dashed border-neutral-700">
+                  <Calendar className="h-10 w-10 mx-auto text-neutral-500 mb-2" />
+                  <p className="text-neutral-400">You haven't created any events yet</p>
+                  <Button 
+                    className="mt-4 bg-gradient-to-r from-primary to-amber-600 text-black hover:from-primary/90 hover:to-amber-500"
+                    onClick={handleCreateEventClick}
+                  >
+                    Create Your First Event
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -86,8 +86,8 @@ export default function CreateEvent() {
           eventId: newEvent.id,
           name: ticketType.name,
           description: ticketType.description,
-          price: ticketType.price, // The schema will handle string-to-number conversion
-          available: ticketType.available,
+          price: parseFloat(ticketType.price),
+          available: typeof ticketType.available === 'string' ? parseInt(ticketType.available) : ticketType.available,
         };
 
         await apiRequest("POST", "/api/ticket-types", ticketTypeData);
