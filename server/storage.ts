@@ -17,6 +17,8 @@ import {
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 
+import session from "express-session";
+
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -51,7 +53,14 @@ export interface IStorage {
   
   // Organizer operations
   getEventsByOrganizer(organizerId: number): Promise<Event[]>;
+  
+  // Session store for authentication
+  sessionStore: session.Store;
 }
+
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
@@ -65,6 +74,8 @@ export class MemStorage implements IStorage {
   private ticketTypeIdCounter: number;
   private performerIdCounter: number;
   private ticketIdCounter: number;
+  
+  public sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -78,6 +89,11 @@ export class MemStorage implements IStorage {
     this.ticketTypeIdCounter = 1;
     this.performerIdCounter = 1;
     this.ticketIdCounter = 1;
+    
+    // Create session store
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
     
     this.seedData();
   }
@@ -101,7 +117,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
+    // Ensure isOrganizer is a boolean (default to false if undefined)
+    const user: User = { 
+      ...insertUser, 
+      id,
+      isOrganizer: insertUser.isOrganizer === true 
+    };
     this.users.set(id, user);
     return user;
   }
@@ -121,7 +142,12 @@ export class MemStorage implements IStorage {
   
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = this.eventIdCounter++;
-    const event: Event = { ...insertEvent, id };
+    // Ensure featured is a boolean (default to false if undefined)
+    const event: Event = { 
+      ...insertEvent, 
+      id,
+      featured: insertEvent.featured === true 
+    };
     this.events.set(id, event);
     return event;
   }
@@ -152,7 +178,12 @@ export class MemStorage implements IStorage {
   
   async createTicketType(insertTicketType: InsertTicketType): Promise<TicketType> {
     const id = this.ticketTypeIdCounter++;
-    const ticketType: TicketType = { ...insertTicketType, id };
+    // Ensure price is a string
+    const ticketType: TicketType = { 
+      ...insertTicketType, 
+      id,
+      price: String(insertTicketType.price)
+    };
     this.ticketTypes.set(id, ticketType);
     return ticketType;
   }
@@ -161,7 +192,18 @@ export class MemStorage implements IStorage {
     const ticketType = this.ticketTypes.get(id);
     if (!ticketType) return undefined;
     
-    const updatedTicketType = { ...ticketType, ...ticketTypeUpdate };
+    // Create a new object with the updates, ensuring price is a string
+    const updatedTicketType = { 
+      ...ticketType
+    };
+    
+    // Apply each property from the update individually with type handling
+    if (ticketTypeUpdate.name !== undefined) updatedTicketType.name = ticketTypeUpdate.name;
+    if (ticketTypeUpdate.description !== undefined) updatedTicketType.description = ticketTypeUpdate.description;
+    if (ticketTypeUpdate.eventId !== undefined) updatedTicketType.eventId = ticketTypeUpdate.eventId;
+    if (ticketTypeUpdate.available !== undefined) updatedTicketType.available = ticketTypeUpdate.available;
+    if (ticketTypeUpdate.price !== undefined) updatedTicketType.price = String(ticketTypeUpdate.price);
+    
     this.ticketTypes.set(id, updatedTicketType);
     return updatedTicketType;
   }
@@ -175,7 +217,18 @@ export class MemStorage implements IStorage {
   
   async createPerformer(insertPerformer: InsertPerformer): Promise<Performer> {
     const id = this.performerIdCounter++;
-    const performer: Performer = { ...insertPerformer, id };
+    
+    // Create the performer object with required fields
+    const performer: Performer = {
+      id,
+      name: insertPerformer.name,
+      imageUrl: insertPerformer.imageUrl,
+      eventId: insertPerformer.eventId,
+      time: insertPerformer.time,
+      // Set isHeadliner explicitly based on the input value
+      isHeadliner: insertPerformer.isHeadliner === true ? true : false
+    };
+    
     this.performers.set(id, performer);
     return performer;
   }
@@ -242,8 +295,18 @@ export class MemStorage implements IStorage {
       isOrganizer: true,
     };
     
+    const adminUser: User = {
+      id: this.userIdCounter++,
+      username: "admin",
+      password: "admin", // In a real app this would be hashed
+      email: "admin@example.com",
+      fullName: "Admin User",
+      isOrganizer: true,
+    };
+    
     this.users.set(user1.id, user1);
     this.users.set(user2.id, user2);
+    this.users.set(adminUser.id, adminUser);
     
     // Create sample events
     const event1: Event = {

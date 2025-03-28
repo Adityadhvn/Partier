@@ -1,7 +1,8 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
+import { useState, useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Discover from "@/pages/discover";
 import EventDetails from "@/pages/event-details";
@@ -12,20 +13,28 @@ import Tickets from "@/pages/tickets";
 import Profile from "@/pages/profile";
 import Scanner from "@/pages/scanner";
 import CreateEvent from "@/pages/create-event";
+import Login from "@/pages/login";
+import ManageEvents from "@/pages/manage-events";
+import AuthPage from "@/pages/auth-page";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
 import Navbar from "@/components/navbar";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Discover} />
-      <Route path="/events" component={Events} />
-      <Route path="/event/:id" component={EventDetails} />
-      <Route path="/tickets" component={Tickets} />
-      <Route path="/ticket/purchase/:eventId" component={TicketPurchase} />
-      <Route path="/ticket/confirmation/:referenceNumber" component={TicketConfirmation} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/scanner" component={Scanner} />
-      <Route path="/create-event" component={CreateEvent} />
+      <ProtectedRoute path="/" component={Discover} />
+      <ProtectedRoute path="/events" component={Events} />
+      <ProtectedRoute path="/event/:id" component={EventDetails} />
+      <ProtectedRoute path="/tickets" component={Tickets} />
+      <ProtectedRoute path="/ticket/purchase/:eventId" component={TicketPurchase} />
+      <ProtectedRoute path="/ticket/confirmation/:referenceNumber" component={TicketConfirmation} />
+      <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/scanner" component={Scanner} />
+      <ProtectedRoute path="/create-event" component={CreateEvent} />
+      <ProtectedRoute path="/manage-events" component={ManageEvents} />
+      <Route path="/auth" component={AuthPage} />
+      <Route path="/login" component={Login} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
@@ -33,15 +42,23 @@ function Router() {
 }
 
 function App() {
+  // Use the wouter hook
+  const [location] = useLocation();
+  // Check if we're on the login or auth page
+  const hideNavbarOn = ['/login', '/auth']; // Routes where navbar should be hidden
+  const showNavbar = !hideNavbarOn.includes(location);
+  
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex flex-col min-h-screen max-w-md mx-auto relative bg-neutral-900 text-neutral-50">
-        <Navbar />
-        <div className="pt-16">
-          <Router />
+      <AuthProvider>
+        <div className="flex flex-col min-h-screen max-w-md mx-auto relative bg-neutral-900 text-neutral-50">
+          {showNavbar && <Navbar />}
+          <div className={showNavbar ? "pt-16" : ""}>
+            <Router />
+          </div>
+          <Toaster />
         </div>
-        <Toaster />
-      </div>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

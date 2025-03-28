@@ -44,11 +44,10 @@ export default function Discover() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="luxury-header font-bold text-2xl text-white">
-              <span className="luxury-accent mr-2 text-primary">Vibe</span>
-              Discover
+              <span className="luxury-accent mr-2 text-primary">discover</span>
             </h1>
             <p className="text-neutral-400 text-sm font-standard">
-              Find and book the Best Events
+              Find and book the Most Luxurious Events
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -94,8 +93,9 @@ export default function Discover() {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="luxury-header font-semibold text-xl text-white">
-              <span className="luxury-accent text-primary">Featured</span>{" "}
-              Events
+              <span className="luxury-accent text-primary">
+                featured Events
+              </span>{" "}
             </h2>
             <Button
               variant="link"
@@ -204,7 +204,7 @@ function EventCard({ event, onGetTickets, onClick }: EventCardProps) {
   };
 
   // Find the lowest price ticket for this event
-  const price = "25.00"; // In a real app, this would come from the API
+  const price = "65.00"; // In a real app, this would come from the API
 
   return (
     <div
@@ -254,13 +254,13 @@ function FeaturedEventSkeleton() {
 function EventCardSkeleton() {
   return (
     <div className="bg-neutral-800 rounded-xl p-4 mb-4 flex">
-      <Skeleton className="h-24 w-24 rounded-lg" />
+      <Skeleton className="h-32 w-32 rounded-lg" />
       <div className="ml-4 flex-1">
         <Skeleton className="h-5 w-3/4 mb-2" />
         <Skeleton className="h-4 w-1/2 mb-2" />
         <Skeleton className="h-4 w-2/3 mb-2" />
         <div className="flex justify-between items-center mt-2">
-          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-6 w-16" />
           <Skeleton className="h-8 w-24 rounded-full" />
         </div>
       </div>

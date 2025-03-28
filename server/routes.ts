@@ -1,59 +1,38 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 import { insertUserSchema, insertEventSchema, insertTicketTypeSchema, insertPerformerSchema, insertTicketSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
+
+// Middleware to ensure user is authenticated
+function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  return res.status(401).json({ message: "Unauthorized" });
+}
+
+// Middleware to ensure user is an organizer
+function ensureOrganizer(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated() && req.user.isOrganizer) {
+    return next();
+  }
+  return res.status(403).json({ message: "Forbidden - Requires organizer role" });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // Auth routes
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already taken" });
-      }
-      
-      const existingEmail = await storage.getUserByEmail(userData.email);
-      if (existingEmail) {
-        return res.status(400).json({ message: "Email already in use" });
-      }
-      
-      const user = await storage.createUser(userData);
-      
-      // Don't send password in response
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid user data", error });
-    }
-  });
+  // Setup passport authentication
+  setupAuth(app);
   
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      // Don't send password in response
-      const { password: _, ...userWithoutPassword } = user;
-      res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: "Login failed", error });
-    }
-  });
+  // Auth routes are now handled by passport in setupAuth
+  // The following Auth routes are setup by passport:
+  // - POST /api/register (user registration)
+  // - POST /api/login (user login)
+  // - POST /api/logout (user logout)
+  // - GET /api/user (get current user)
   
   // Event routes
   app.get("/api/events", async (req, res) => {
@@ -94,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/events", async (req, res) => {
+  app.post("/api/events", ensureOrganizer, async (req, res) => {
     try {
       const eventData = insertEventSchema.parse(req.body);
       const event = await storage.createEvent(eventData);
@@ -104,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/events/:id", async (req, res) => {
+  app.put("/api/events/:id", ensureOrganizer, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
       
@@ -125,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/events/:id", async (req, res) => {
+  app.delete("/api/events/:id", ensureOrganizer, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
       
@@ -160,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/ticket-types", async (req, res) => {
+  app.post("/api/ticket-types", ensureOrganizer, async (req, res) => {
     try {
       const ticketTypeData = insertTicketTypeSchema.parse(req.body);
       const ticketType = await storage.createTicketType(ticketTypeData);
@@ -170,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/ticket-types/:id", async (req, res) => {
+  app.put("/api/ticket-types/:id", ensureOrganizer, async (req, res) => {
     try {
       const ticketTypeId = parseInt(req.params.id);
       
@@ -206,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/performers", async (req, res) => {
+  app.post("/api/performers", ensureOrganizer, async (req, res) => {
     try {
       const performerData = insertPerformerSchema.parse(req.body);
       const performer = await storage.createPerformer(performerData);
@@ -217,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ticket routes
-  app.get("/api/tickets/user/:userId", async (req, res) => {
+  app.get("/api/tickets/user/:userId", ensureAuthenticated, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -267,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/tickets", async (req, res) => {
+  app.post("/api/tickets", ensureAuthenticated, async (req, res) => {
     try {
       // Generate a unique 5-digit reference number
       const randomDigits = Math.floor(10000 + Math.random() * 90000).toString();
@@ -291,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Organizer routes
-  app.get("/api/organizer/:id/events", async (req, res) => {
+  app.get("/api/organizer/:id/events", ensureOrganizer, async (req, res) => {
     try {
       const organizerId = parseInt(req.params.id);
       
