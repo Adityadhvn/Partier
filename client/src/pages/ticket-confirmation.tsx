@@ -18,7 +18,7 @@ export default function TicketConfirmation() {
     data: ticket, 
     isLoading: ticketLoading, 
     isError: ticketError 
-  } = useQuery({
+  } = useQuery<Ticket>({
     queryKey: [`/api/tickets/reference/${referenceNumber}`] as const,
     gcTime: 0,
     retry: 3
@@ -41,9 +41,9 @@ export default function TicketConfirmation() {
     data: event, 
     isLoading: eventLoading, 
     isError: eventError 
-  } = useQuery({
-    queryKey: [ticket ? `/api/events/${ticket.eventId}` : 'noQuery'] as const,
-    enabled: !!ticket,
+  } = useQuery<Event>({
+    queryKey: [(ticket && 'eventId' in ticket) ? `/api/events/${ticket.eventId}` : 'noQuery'] as const,
+    enabled: !!(ticket && 'eventId' in ticket),
     gcTime: 0
   });
 
@@ -52,9 +52,9 @@ export default function TicketConfirmation() {
     data: ticketType,
     isLoading: ticketTypeLoading, 
     isError: ticketTypeError 
-  } = useQuery({
-    queryKey: [ticket ? `/api/ticket-types/${ticket.ticketTypeId}` : 'noQuery'] as const,
-    enabled: !!ticket,
+  } = useQuery<TicketType>({
+    queryKey: [(ticket && 'ticketTypeId' in ticket) ? `/api/ticket-types/${ticket.ticketTypeId}` : 'noQuery'] as const,
+    enabled: !!(ticket && 'ticketTypeId' in ticket),
     gcTime: 0
   });
 
@@ -74,9 +74,33 @@ export default function TicketConfirmation() {
           <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
             <X className="text-white h-8 w-8" />
           </div>
-          <h2 className="font-display font-semibold text-xl text-white mb-2">Ticket Not Found</h2>
+          <h2 className="font-display font-semibold text-2xl text-white mb-2">Ticket Not Found</h2>
           <p className="text-neutral-400 text-center mb-8">
             We couldn't find this ticket. It may have been deleted or the reference number is incorrect.
+          </p>
+          <Button 
+            onClick={() => navigate("/tickets")}
+            className="bg-primary hover:bg-primary-light text-white font-medium py-3 px-6 rounded-xl transition-colors"
+          >
+            Go to My Tickets
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check - we should have ticket, event, and ticketType at this point
+  // but let's double check to prevent runtime errors
+  if (!ticket || !event || !ticketType) {
+    return (
+      <div className="h-full flex flex-col bg-neutral-900 p-4">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
+            <X className="text-white h-8 w-8" />
+          </div>
+          <h2 className="font-display font-semibold text-xl text-white mb-2">Data Loading Error</h2>
+          <p className="text-neutral-400 text-center mb-8">
+            There was a problem loading this ticket information. Please try again.
           </p>
           <Button 
             onClick={() => navigate("/tickets")}
