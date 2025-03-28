@@ -58,7 +58,7 @@
 .btn-hover-effect:hover, 
 button:hover:not(.disabled), 
 [role="button"]:hover:not(.disabled) {
-  background-color: #D3047E !important;
+  background-color: #949291 !important;
   transition: background-color 0.2s ease-in-out;
 }
 

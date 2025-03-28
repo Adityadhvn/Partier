@@ -269,8 +269,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/tickets", async (req, res) => {
     try {
-      // Generate a unique reference number
-      const referenceNumber = `TIX-${randomUUID().substring(0, 8).toUpperCase()}`;
+      // Generate a unique 5-digit reference number
+      const randomDigits = Math.floor(10000 + Math.random() * 90000).toString();
+      const referenceNumber = `TIX${randomDigits}`;
       
       // Add the reference number to the ticket data
       const ticketData = {

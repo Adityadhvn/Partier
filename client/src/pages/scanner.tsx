@@ -15,7 +15,7 @@ export default function Scanner() {
   const [validationStatus, setValidationStatus] = useState<"idle" | "success" | "error">("idle");
 
   const { data: ticket, isLoading: ticketLoading } = useQuery<Ticket>({
-    queryKey: scannedCode ? [`/api/tickets/reference/${scannedCode}`] : null,
+    queryKey: scannedCode ? [`/api/tickets/reference/${scannedCode}`] : ['noScan'],
     enabled: !!scannedCode,
     retry: false,
     onSuccess: () => {
@@ -43,12 +43,12 @@ export default function Scanner() {
   });
 
   const { data: event } = useQuery<Event>({
-    queryKey: ticket ? [`/api/events/${ticket.eventId}`] : null,
+    queryKey: ticket ? [`/api/events/${ticket.eventId}`] : ['noEvent'],
     enabled: !!ticket
   });
 
   const { data: ticketType } = useQuery<TicketType>({
-    queryKey: ticket ? [`/api/ticket-types/${ticket.ticketTypeId}`] : null,
+    queryKey: ticket ? [`/api/ticket-types/${ticket.ticketTypeId}`] : ['noTicketType'],
     enabled: !!ticket
   });
 
@@ -104,7 +104,7 @@ export default function Scanner() {
                 <QrCode className="w-16 h-16 text-neutral-400 mb-4" />
                 <input 
                   type="text" 
-                  placeholder="Enter ticket code (e.g., TIX-ABCDEF-123456)"
+                  placeholder="Enter ticket code (e.g., TIX12345)"
                   className="bg-neutral-700 border-0 text-white p-2 rounded w-4/5"
                   value={scannedCode || ''}
                   onChange={(e) => setScannedCode(e.target.value)}

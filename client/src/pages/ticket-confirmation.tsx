@@ -15,12 +15,12 @@ export default function TicketConfirmation() {
   });
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
-    queryKey: ticket ? [`/api/events/${ticket.eventId}`] : null,
+    queryKey: ticket ? [`/api/events/${ticket.eventId}`] : ['noQuery'],
     enabled: !!ticket,
   });
 
   const { data: ticketType, isLoading: ticketTypeLoading } = useQuery<TicketType>({
-    queryKey: ticket ? [`/api/ticket-types/${ticket.ticketTypeId}`] : null,
+    queryKey: ticket ? [`/api/ticket-types/${ticket.ticketTypeId}`] : ['noQuery'],
     enabled: !!ticket,
   });
 
@@ -84,7 +84,7 @@ export default function TicketConfirmation() {
           <div className="bg-white p-6 flex flex-col items-center justify-center">
             <div className="w-48 h-48 border-2 border-neutral-800 relative flex flex-col items-center justify-center">
               <QrCode className="w-32 h-32 text-neutral-800 mb-2" />
-              <div className="text-neutral-800 text-xs font-mono">
+              <div className="text-neutral-800 text-sm font-bold font-mono tracking-wider">
                 {ticket.referenceNumber}
               </div>
               <div className="absolute inset-0 pointer-events-none">

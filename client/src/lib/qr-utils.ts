@@ -10,10 +10,10 @@ import { Ticket } from "@shared/schema";
  */
 export function generateReferenceNumber(): string {
   const prefix = "TIX";
-  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const timestamp = new Date().getTime().toString(36).substring(5).toUpperCase();
+  // Generate a 5-digit random number (10000-99999)
+  const randomDigits = Math.floor(10000 + Math.random() * 90000).toString();
   
-  return `${prefix}-${randomPart}-${timestamp}`;
+  return `${prefix}${randomDigits}`;
 }
 
 /**
@@ -23,8 +23,8 @@ export function generateReferenceNumber(): string {
  */
 export function parseQRCode(code: string): { type: string; id: string } | null {
   try {
-    // For our app, QR codes follow a simple format: TIX-XXXXXX-XXXXXX
-    const pattern = /^TIX-([A-Z0-9]+)-([A-Z0-9]+)$/;
+    // For our app, QR codes follow a simple format: TIX#####
+    const pattern = /^TIX(\d{5})$/;
     const match = code.match(pattern);
     
     if (!match) {
