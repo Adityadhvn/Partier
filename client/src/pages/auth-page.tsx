@@ -67,7 +67,7 @@ export default function AuthPage() {
       password: values.password,
       email: values.email,
       fullName: values.name,
-      isOrganizer: false,
+      isOrganizer: false
     });
   };
 

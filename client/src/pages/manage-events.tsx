@@ -30,7 +30,10 @@ import {
   ArrowLeft,
   X,
   Plus,
-  Star
+  Star,
+  Download,
+  Users,
+  FileText
 } from "lucide-react";
 import { Event, TicketType } from "@shared/schema";
 
@@ -171,9 +174,31 @@ export default function ManageEvents() {
             <Star className="text-primary h-5 w-5" />
             <h2 className="font-display text-lg text-white">Admin Dashboard</h2>
           </div>
-          <p className="text-neutral-400 text-sm">
+          <p className="text-neutral-400 text-sm mb-4">
             Manage your events and ticket availability below. Changes will take effect immediately.
           </p>
+          
+          <div className="flex flex-wrap gap-2 mt-2">
+            <a 
+              href="/api/export/users" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg bg-neutral-700 text-white hover:bg-neutral-600 transition-colors"
+            >
+              <Users className="h-4 w-4 mr-2 text-primary" />
+              Export Users (Excel)
+            </a>
+            
+            <a 
+              href="/api/export/tickets" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg bg-neutral-700 text-white hover:bg-neutral-600 transition-colors"
+            >
+              <FileText className="h-4 w-4 mr-2 text-primary" />
+              Export Tickets (CSV)
+            </a>
+          </div>
         </div>
         
         {events && events.length > 0 ? (
@@ -320,7 +345,17 @@ function EventsTableSkeleton() {
       </header>
       
       <div className="flex-1 overflow-y-auto px-4 pb-24">
-        <Skeleton className="h-24 w-full rounded-xl mb-6" />
+        <div className="bg-neutral-800 rounded-xl p-4 mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-6 w-40" />
+          </div>
+          <Skeleton className="h-4 w-full mb-5" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-40 rounded-lg" />
+            <Skeleton className="h-10 w-40 rounded-lg" />
+          </div>
+        </div>
         
         <div className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800">
           <div className="p-4 bg-neutral-800">

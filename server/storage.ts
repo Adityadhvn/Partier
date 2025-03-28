@@ -25,6 +25,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUsers(): Promise<User[]>;
 
   // Event operations
   getEvents(): Promise<Event[]>;
@@ -50,6 +51,7 @@ export interface IStorage {
   getTicket(id: number): Promise<Ticket | undefined>;
   getTicketByReference(referenceNumber: string): Promise<Ticket | undefined>;
   createTicket(ticket: InsertTicket): Promise<Ticket>;
+  getAllTickets(): Promise<Ticket[]>;
   
   // Organizer operations
   getEventsByOrganizer(organizerId: number): Promise<Event[]>;
@@ -125,6 +127,10 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   // Event operations
@@ -265,6 +271,10 @@ export class MemStorage implements IStorage {
     };
     this.tickets.set(id, ticket);
     return ticket;
+  }
+  
+  async getAllTickets(): Promise<Ticket[]> {
+    return Array.from(this.tickets.values());
   }
   
   // Organizer operations

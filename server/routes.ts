@@ -3,6 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { insertUserSchema, insertEventSchema, insertTicketTypeSchema, insertPerformerSchema, insertTicketSchema } from "@shared/schema";
+import fs from 'fs';
+import path from 'path';
+import { createObjectCsvWriter } from 'csv-writer';
+import * as ExcelJS from 'exceljs';
 import { randomUUID } from "crypto";
 
 // Middleware to ensure user is authenticated
@@ -282,6 +286,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(events);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch organizer events", error });
+    }
+  });
+
+  // Export routes
+  app.get("/api/export/users", ensureOrganizer, async (req, res) => {
+    try {
+      // Create a directory for exports if it doesn't exist
+      const exportDir = path.resolve('./exports');
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true });
+      }
+
+      // Get all users
+      const users = Array.from((await storage.getUsers()) || []);
+      
+      if (!users || users.length === 0) {
+        return res.status(404).json({ message: "No users found" });
+      }
+
+      // Create Excel workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Users');
+      
+      // Add columns
+      worksheet.columns = [
+        { header: 'ID', key: 'id', width: 10 },
+        { header: 'Username', key: 'username', width: 20 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Full Name', key: 'fullName', width: 30 },
+        { header: 'Is Organizer', key: 'isOrganizer', width: 15 },
+        { header: 'Created At', key: 'createdAt', width: 20 }
+      ];
+      
+      // Add rows
+      users.forEach(user => {
+        const userData = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          isOrganizer: user.isOrganizer ? 'Yes' : 'No',
+          createdAt: 'N/A' // User type doesn't have createdAt, but we can include it for the export
+        };
+        worksheet.addRow(userData);
+      });
+      
+      // Apply styles
+      worksheet.getRow(1).font = { bold: true };
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `users_export_${timestamp}.xlsx`;
+      const filePath = path.join(exportDir, filename);
+      
+      // Save workbook
+      await workbook.xlsx.writeFile(filePath);
+      
+      // Send file
+      res.download(filePath, filename, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+        }
+        
+        // Delete file after sending
+        fs.unlinkSync(filePath);
+      });
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      res.status(500).json({ message: "Failed to export users", error });
+    }
+  });
+
+  app.get("/api/export/tickets", ensureOrganizer, async (req, res) => {
+    try {
+      // Create a directory for exports if it doesn't exist
+      const exportDir = path.resolve('./exports');
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true });
+      }
+
+      // Get all tickets
+      const tickets = Array.from((await storage.getAllTickets()) || []);
+      
+      if (!tickets || tickets.length === 0) {
+        return res.status(404).json({ message: "No tickets found" });
+      }
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `ticket_sales_${timestamp}.csv`;
+      const filePath = path.join(exportDir, filename);
+      
+      // Setup CSV writer
+      const csvWriter = createObjectCsvWriter({
+        path: filePath,
+        header: [
+          { id: 'id', title: 'ID' },
+          { id: 'referenceNumber', title: 'Reference Number' },
+          { id: 'userId', title: 'User ID' },
+          { id: 'userName', title: 'User Name' },
+          { id: 'eventId', title: 'Event ID' },
+          { id: 'eventName', title: 'Event Name' },
+          { id: 'ticketTypeId', title: 'Ticket Type ID' },
+          { id: 'ticketTypeName', title: 'Ticket Type' },
+          { id: 'price', title: 'Price' },
+          { id: 'purchaseDate', title: 'Purchase Date' },
+          { id: 'status', title: 'Status' }
+        ]
+      });
+      
+      // Fetch related data for each ticket
+      const csvRecords = await Promise.all(tickets.map(async (ticket) => {
+        const user = await storage.getUser(ticket.userId);
+        const event = await storage.getEvent(ticket.eventId);
+        const ticketType = await storage.getTicketType(ticket.ticketTypeId);
+        
+        return {
+          id: ticket.id,
+          referenceNumber: ticket.referenceNumber,
+          userId: ticket.userId,
+          userName: user ? user.fullName : 'Unknown User',
+          eventId: ticket.eventId,
+          eventName: event ? event.title : 'Unknown Event',
+          ticketTypeId: ticket.ticketTypeId,
+          ticketTypeName: ticketType ? ticketType.name : 'Unknown Ticket Type',
+          price: ticketType ? `$${ticketType.price}` : 'N/A',
+          purchaseDate: ticket.purchaseDate ? new Date(ticket.purchaseDate).toLocaleString() : 'N/A',
+          status: 'Issued' // Since Ticket type doesn't have status, defaulting to 'Issued'
+        };
+      }));
+      
+      // Write to CSV file
+      await csvWriter.writeRecords(csvRecords);
+      
+      // Send file
+      res.download(filePath, filename, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+        }
+        
+        // Delete file after sending
+        fs.unlinkSync(filePath);
+      });
+    } catch (error) {
+      console.error("Error exporting tickets:", error);
+      res.status(500).json({ message: "Failed to export tickets", error });
     }
   });
 

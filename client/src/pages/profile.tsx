@@ -21,25 +21,21 @@ import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import type { Event } from "@shared/schema";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Profile() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
 
-  // Mock user data - in a real app, this would come from auth context
-  const user = {
-    id: 1,
-    name: "Aditya Dhawan",
-    email: "adityadhawan46@gmail.com",
-    isOrganizer: true,
-  };
+  // Get user data from auth context
+  const { user, logoutMutation } = useAuth();
 
   // Fetch user's events (for organizers)
   const { data: organizerEvents, isLoading: isLoadingEvents } = useQuery({
-    queryKey: ['/api/organizer', user.id, 'events'],
-    queryFn: () => fetch(`/api/organizer/${user.id}/events`).then(res => res.json()),
-    enabled: user.isOrganizer,
+    queryKey: ['/api/organizer', user?.id, 'events'],
+    queryFn: () => fetch(`/api/organizer/${user?.id}/events`).then(res => res.json()),
+    enabled: !!user?.isOrganizer,
   });
 
   const handleCreateEventClick = () => {
@@ -60,11 +56,15 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/auth");
+        toast({
+          title: "Logged out",
+          description: "You have been successfully logged out.",
+        });
+      }
     });
-    // In a real app, this would clear auth state
   };
   
   const formatEventDate = (dateString: string | Date) => {
@@ -85,20 +85,20 @@ export default function Profile() {
             <Avatar className="h-16 w-16">
               <AvatarImage src="" />
               <AvatarFallback className="bg-primary text-white text-xl">
-                {user.name.charAt(0)}
+                {user?.fullName ? user.fullName.charAt(0) : 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="ml-4">
               <h2 className="font-display font-semibold text-xl text-white">
-                {user.name}
+                {user?.fullName || 'User'}
               </h2>
-              <p className="text-neutral-400">{user.email}</p>
+              <p className="text-neutral-400">{user?.email || 'No email provided'}</p>
             </div>
           </div>
         </div>
 
         {/* Organizer Options (conditionally shown) */}
-        {user.isOrganizer && (
+        {user?.isOrganizer && (
           <div className="mb-6">
             <h3 className="font-medium text-neutral-400 uppercase text-sm mb-3">
               Organizer Options
@@ -151,7 +151,7 @@ export default function Profile() {
         )}
         
         {/* My Events (for organizers) */}
-        {user.isOrganizer && (
+        {user?.isOrganizer && (
           <div className="mb-6">
             <h3 className="font-medium text-neutral-400 uppercase text-sm mb-3">
               My Events
