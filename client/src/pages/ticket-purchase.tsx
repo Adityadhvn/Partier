@@ -16,7 +16,6 @@ export default function TicketPurchase() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [selectedTickets, setSelectedTickets] = useState<{ [key: number]: number }>({});
-  const [paymentMethod, setPaymentMethod] = useState("applepay");
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: [`/api/events/${eventId}`],
@@ -103,14 +102,13 @@ export default function TicketPurchase() {
     const selectedTicketTypeId = Object.entries(selectedTickets).find(([_, qty]) => qty > 0)?.[0];
     if (!selectedTicketTypeId) return;
     
-    // Prepare payment details
+    // Prepare payment details (auto-approved for demo)
     const paymentDetails = {
-      method: paymentMethod === "applepay" ? "Apple Pay" : paymentMethod === "creditcard" ? "Credit Card" : "PayPal",
+      method: "Automatic Payment",
       subtotal: calculateSubtotal().toFixed(2),
       serviceFee: calculateServiceFee().toFixed(2),
       tax: calculateTax().toFixed(2),
-      // In a real app, this would include actual payment processing info
-      last4: "4242"
+      status: "approved"
     };
 
     // Create the ticket
@@ -198,63 +196,7 @@ export default function TicketPurchase() {
           ))}
         </div>
         
-        {/* Payment Options */}
-        <h2 className="font-display font-semibold text-lg text-white mt-8 mb-3">Payment Method</h2>
-        
-        <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-          <div className="space-y-3">
-            <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white">
-                <i className="fab fa-apple-pay"></i>
-              </div>
-              <Label 
-                htmlFor="applepay" 
-                className="ml-3 text-white flex-1 cursor-pointer"
-              >
-                Apple Pay
-              </Label>
-              <RadioGroupItem 
-                value="applepay" 
-                id="applepay" 
-                className="accent-primary"
-              />
-            </div>
-            
-            <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white">
-                <i className="fas fa-credit-card"></i>
-              </div>
-              <Label 
-                htmlFor="creditcard" 
-                className="ml-3 text-white flex-1 cursor-pointer"
-              >
-                Credit Card
-              </Label>
-              <RadioGroupItem 
-                value="creditcard" 
-                id="creditcard" 
-                className="accent-primary"
-              />
-            </div>
-            
-            <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white">
-                <i className="fab fa-paypal"></i>
-              </div>
-              <Label 
-                htmlFor="paypal" 
-                className="ml-3 text-white flex-1 cursor-pointer"
-              >
-                PayPal
-              </Label>
-              <RadioGroupItem 
-                value="paypal" 
-                id="paypal" 
-                className="accent-primary"
-              />
-            </div>
-          </div>
-        </RadioGroup>
+
         
         {/* Order Summary */}
         <h2 className="font-display font-semibold text-lg text-white mt-8 mb-3">Order Summary</h2>
@@ -364,28 +306,7 @@ function TicketPurchaseSkeleton() {
           </div>
         </div>
         
-        {/* Payment Options */}
-        <Skeleton className="h-7 w-44 mt-8 mb-3" />
-        
-        <div className="space-y-3">
-          <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="ml-3 h-5 w-24 flex-1" />
-            <Skeleton className="w-4 h-4 rounded-full" />
-          </div>
-          
-          <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="ml-3 h-5 w-32 flex-1" />
-            <Skeleton className="w-4 h-4 rounded-full" />
-          </div>
-          
-          <div className="bg-neutral-800 rounded-xl p-4 flex items-center">
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="ml-3 h-5 w-20 flex-1" />
-            <Skeleton className="w-4 h-4 rounded-full" />
-          </div>
-        </div>
+
         
         {/* Order Summary */}
         <Skeleton className="h-7 w-44 mt-8 mb-3" />
