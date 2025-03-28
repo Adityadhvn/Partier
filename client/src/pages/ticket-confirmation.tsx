@@ -3,25 +3,59 @@ import { useQuery } from "@tanstack/react-query";
 import { X, Share, InfoIcon, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Ticket, Event, TicketType } from "@shared/schema";
+import { Ticket, Event, TicketType } from "@shared/schema";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import * as React from "react";
 
 export default function TicketConfirmation() {
   const { referenceNumber } = useParams<{ referenceNumber: string }>();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
 
-  const { data: ticket, isLoading: ticketLoading } = useQuery<Ticket>({
-    queryKey: [`/api/tickets/reference/${referenceNumber}`],
+  // Use React Query to fetch the ticket with the given reference number
+  const { 
+    data: ticket, 
+    isLoading: ticketLoading, 
+    isError: ticketError 
+  } = useQuery({
+    queryKey: [`/api/tickets/reference/${referenceNumber}`] as const,
+    gcTime: 0,
+    retry: 3
   });
 
-  const { data: event, isLoading: eventLoading } = useQuery<Event>({
-    queryKey: ticket ? [`/api/events/${ticket.eventId}`] : ['noQuery'],
+  // Show toast for ticket errors
+  React.useEffect(() => {
+    if (ticketError) {
+      console.error("Error fetching ticket data for reference:", referenceNumber);
+      toast({
+        title: "Error",
+        description: "Could not load ticket information. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [ticketError, referenceNumber, toast]);
+
+  // If we have a ticket, fetch the event details
+  const { 
+    data: event, 
+    isLoading: eventLoading, 
+    isError: eventError 
+  } = useQuery({
+    queryKey: [ticket ? `/api/events/${ticket.eventId}` : 'noQuery'] as const,
     enabled: !!ticket,
+    gcTime: 0
   });
 
-  const { data: ticketType, isLoading: ticketTypeLoading } = useQuery<TicketType>({
-    queryKey: ticket ? [`/api/ticket-types/${ticket.ticketTypeId}`] : ['noQuery'],
+  // If we have a ticket, fetch the ticket type details
+  const { 
+    data: ticketType,
+    isLoading: ticketTypeLoading, 
+    isError: ticketTypeError 
+  } = useQuery({
+    queryKey: [ticket ? `/api/ticket-types/${ticket.ticketTypeId}` : 'noQuery'] as const,
     enabled: !!ticket,
+    gcTime: 0
   });
 
   const handleCloseClick = () => {
@@ -32,8 +66,27 @@ export default function TicketConfirmation() {
     return <TicketConfirmationSkeleton />;
   }
 
-  if (!ticket || !event || !ticketType) {
-    return <div className="p-4">Ticket not found</div>;
+  // Show error screen with helpful message and return button
+  if (ticketError || !ticket || (ticket && (eventError || !event || ticketTypeError || !ticketType))) {
+    return (
+      <div className="h-full flex flex-col bg-neutral-900 p-4">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-4">
+            <X className="text-white h-8 w-8" />
+          </div>
+          <h2 className="font-display font-semibold text-xl text-white mb-2">Ticket Not Found</h2>
+          <p className="text-neutral-400 text-center mb-8">
+            We couldn't find this ticket. It may have been deleted or the reference number is incorrect.
+          </p>
+          <Button 
+            onClick={() => navigate("/tickets")}
+            className="bg-primary hover:bg-primary-light text-white font-medium py-3 px-6 rounded-xl transition-colors"
+          >
+            Go to My Tickets
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
