@@ -1,63 +1,99 @@
-import React, { useState } from "react";
-import { Loader2, Shield, Check, X, User, ChevronDown, ChevronUp } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { User, InsertUser, Event, Ticket } from "@shared/schema";
+import { Loader2, Download, Users, Calendar, TicketIcon } from "lucide-react";
+import { exportUsersToCsv, exportTicketSalesToCSV, exportEventsToCsv } from "@/lib/export-utils";
+
+// Schema for adding a new organizer
+const addOrganizerSchema = z.object({
+  username: z.string().min(3, {
+    message: "Username must be at least 3 characters.",
+  }),
+  password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  fullName: z.string().min(2, {
+    message: "Full name must be at least 2 characters.",
+  }),
+});
+
+type AddOrganizerValues = z.infer<typeof addOrganizerSchema>;
 
 export default function AdminPanel() {
-  const { user, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
-  const [expandedUser, setExpandedUser] = useState<number | null>(null);
-
-  // Fetch all users
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [isAddOrganizerOpen, setIsAddOrganizerOpen] = useState(false);
+  
+  // Redirect if not admin
+  if (user && !user.isSuperAdmin && !user.isOrganizer) {
+    window.location.href = "/";
+    return null;
+  }
+  
+  const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    queryFn: async () => {
-      if (!user?.isSuperAdmin) {
-        throw new Error("Not authorized");
-      }
-      return fetch("/api/users").then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch users");
-        return res.json();
-      });
-    },
-    enabled: !!user?.isSuperAdmin, // Only fetch if the user is a super admin
   });
-
-  // Update organizer status
-  const updateOrganizerStatus = useMutation({
-    mutationFn: async ({ userId, isOrganizer }: { userId: number; isOrganizer: boolean }) => {
-      const res = await fetch(`/api/users/${userId}/organizer-status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isOrganizer }),
-      });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update organizer status");
-      }
-      
-      return res.json();
+  
+  const { data: events, isLoading: isLoadingEvents } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
+  });
+  
+  const { data: tickets, isLoading: isLoadingTickets } = useQuery<Ticket[]>({
+    queryKey: ["/api/tickets/all"],
+  });
+  
+  const addOrganizerMutation = useMutation({
+    mutationFn: async (data: InsertUser) => {
+      const response = await apiRequest("POST", "/api/organizers", data);
+      return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "User organizer status updated successfully",
-        variant: "default",
+        description: "New organizer added successfully",
       });
-      // Invalidate users query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsAddOrganizerOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -67,175 +103,401 @@ export default function AdminPanel() {
       });
     },
   });
-
-  // Redirect to login if not authenticated
-  React.useEffect(() => {
-    if (!authLoading && !user) {
-      setLocation("/auth");
-    } else if (!authLoading && user && !user.isSuperAdmin) {
-      setLocation("/");
+  
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
+      const response = await apiRequest("PATCH", `/api/users/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Access Denied",
-        description: "You don't have permission to access the admin panel",
+        title: "Success",
+        description: "User updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const form = useForm<AddOrganizerValues>({
+    resolver: zodResolver(addOrganizerSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      email: "",
+      fullName: "",
+    },
+  });
+  
+  function onSubmit(values: AddOrganizerValues) {
+    addOrganizerMutation.mutate({
+      ...values,
+      isOrganizer: true,
+      isSuperAdmin: false,
+    });
+  }
+  
+  const handleExportUsers = () => {
+    if (users && users.length > 0) {
+      exportUsersToCsv(users);
+      toast({
+        title: "Export Successful",
+        description: "Users data has been exported to CSV",
+      });
+    } else {
+      toast({
+        title: "Export Failed",
+        description: "No user data available to export",
         variant: "destructive",
       });
     }
-  }, [authLoading, user, setLocation]);
-
-  const toggleExpandUser = (userId: number) => {
-    if (expandedUser === userId) {
-      setExpandedUser(null);
+  };
+  
+  const handleExportTickets = () => {
+    if (tickets && tickets.length > 0 && events && events.length > 0) {
+      exportTicketSalesToCSV(tickets, events);
+      toast({
+        title: "Export Successful",
+        description: "Ticket sales data has been exported to CSV",
+      });
     } else {
-      setExpandedUser(userId);
+      toast({
+        title: "Export Failed",
+        description: "No ticket data available to export",
+        variant: "destructive",
+      });
     }
   };
+  
+  const handleExportEvents = () => {
+    if (events && events.length > 0 && users) {
+      const organizers = users.filter(u => u.isOrganizer);
+      exportEventsToCsv(events, organizers);
+      toast({
+        title: "Export Successful",
+        description: "Events data has been exported to CSV",
+      });
+    } else {
+      toast({
+        title: "Export Failed",
+        description: "No event data available to export",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleToggleOrganizer = (user: User) => {
+    if (user.isSuperAdmin) return; // Don't allow toggling super admin
 
-  if (authLoading || usersLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user?.isSuperAdmin) {
-    // Instead of returning null, show an unauthorized message
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
-        <p className="text-muted-foreground text-center mb-6">
-          You don't have permission to access the admin panel
-        </p>
-        <Button variant="outline" onClick={() => setLocation("/")}>
-          Back to Home
-        </Button>
-      </div>
-    );
-  }
+    updateUserMutation.mutate({
+      id: user.id,
+      data: { isOrganizer: !user.isOrganizer },
+    });
+  };
 
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
-            Admin Panel
-          </h1>
-          <p className="text-muted-foreground">
-            Manage platform access for organizers
-          </p>
-        </div>
-        <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground">
-          <Shield className="h-4 w-4" />
-          Super Admin
-        </Badge>
-      </div>
+    <div className="container py-10">
+      <h1 className="text-4xl font-bold mb-2 font-display relative">
+        Admin Panel
+        <span className="text-primary text-4xl font-calligraphy absolute -right-10 -top-3 italic transform rotate-12">Luxury</span>
+      </h1>
+      <p className="text-gray-400 mb-6">
+        Manage users, events, and system settings
+      </p>
 
-      <Card className="shadow-md mb-8">
-        <CardHeader>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>
-            Control which users have organizer privileges
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {users && users.length > 0 ? (
-            <ul className="space-y-4">
-              {users.map((u: any) => (
-                <li key={u.id} className="bg-card rounded-lg border overflow-hidden">
-                  <div 
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => toggleExpandUser(u.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <User className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{u.fullName}</p>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {u.isOrganizer ? (
-                        <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">Organizer</Badge>
-                      ) : (
-                        <Badge variant="outline">Regular User</Badge>
-                      )}
-                      {u.isSuperAdmin && (
-                        <Badge className="bg-primary hover:bg-primary text-primary-foreground">Super Admin</Badge>
-                      )}
-                      {expandedUser === u.id ? (
-                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </div>
-                  </div>
-                  
-                  {expandedUser === u.id && (
-                    <div className="p-4 border-t">
-                      <div className="mb-4">
-                        <p className="text-sm font-medium mb-1">Username</p>
-                        <p className="text-muted-foreground">{u.username}</p>
-                      </div>
-                      <Separator className="my-4" />
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <Label htmlFor={`organizer-switch-${u.id}`}>Organizer Status</Label>
-                          <p className="text-sm text-muted-foreground">
-                            {u.isOrganizer 
-                              ? "Can create and manage events"
-                              : "Cannot create or manage events"}
-                          </p>
-                        </div>
-                        <Switch
-                          id={`organizer-switch-${u.id}`}
-                          checked={u.isOrganizer}
-                          disabled={u.isSuperAdmin || updateOrganizerStatus.isPending}
-                          onCheckedChange={(checked) => {
-                            updateOrganizerStatus.mutate({ 
-                              userId: u.id, 
-                              isOrganizer: checked 
-                            });
-                          }}
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList>
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 mr-2" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="events">
+            <Calendar className="h-4 w-4 mr-2" />
+            Events
+          </TabsTrigger>
+          <TabsTrigger value="tickets">
+            <TicketIcon className="h-4 w-4 mr-2" />
+            Tickets
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4 mt-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-2xl font-semibold mb-4 font-display">User Management</h2>
+            <div className="flex gap-4">
+              {user?.isSuperAdmin && (
+                <Dialog open={isAddOrganizerOpen} onOpenChange={setIsAddOrganizerOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary" className="btn-hover-effect bg-primary text-black font-semibold border-none">
+                      Add Organizer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add a New Organizer</DialogTitle>
+                      <DialogDescription>
+                        Create a new user with organizer privileges.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </div>
-                      {u.isSuperAdmin && (
-                        <p className="text-xs text-amber-600 mt-2">
-                          Super admin status cannot be modified through the UI
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                          <Button
+                            type="submit"
+                            disabled={addOrganizerMutation.isPending}
+                            className="mt-4 bg-primary text-black font-semibold hover:bg-primary/80"
+                          >
+                            {addOrganizerMutation.isPending && (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            Add Organizer
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              )}
+              
+              <Button 
+                variant="outline" 
+                onClick={handleExportUsers}
+                disabled={isLoadingUsers || !users || users.length === 0}
+                className="border-primary"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Users
+              </Button>
+            </div>
+          </div>
+
+          {isLoadingUsers ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No users found</p>
+            <div className="grid gap-4">
+              {users && users.map((user) => (
+                <Card key={user.id} className="overflow-hidden border-primary">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between">
+                      <div>
+                        <CardTitle>{user.fullName}</CardTitle>
+                        <CardDescription>{user.email}</CardDescription>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {user.isSuperAdmin ? (
+                          <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-md text-xs">
+                            Super Admin
+                          </span>
+                        ) : user.isOrganizer ? (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+                            Organizer
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+                            User
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-500">
+                      Username: <span className="font-medium">{user.username}</span>
+                    </div>
+                  </CardContent>
+                  {user?.isSuperAdmin && (
+                    <CardFooter className="border-t pt-4 bg-gray-50">
+                      <div className="flex items-center">
+                        <Checkbox
+                          id={`organizer-${user.id}`}
+                          checked={user.isOrganizer}
+                          onCheckedChange={() => handleToggleOrganizer(user)}
+                          disabled={user.isSuperAdmin || !user?.isSuperAdmin}
+                          className="mr-2"
+                        />
+                        <label
+                          htmlFor={`organizer-${user.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          Organizer Status
+                        </label>
+                      </div>
+                    </CardFooter>
+                  )}
+                </Card>
+              ))}
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex justify-between bg-muted/20 border-t">
-          <p className="text-xs text-muted-foreground">
-            {users ? users.length : 0} users in the system
-          </p>
-          <div className="flex items-center gap-1">
-            <p className="text-xs text-muted-foreground">
-              Organizers: {users ? users.filter((u: any) => u.isOrganizer).length : 0}
-            </p>
-            <Separator orientation="vertical" className="h-4 mx-2" />
-            <p className="text-xs text-muted-foreground">
-              Regular users: {users ? users.filter((u: any) => !u.isOrganizer).length : 0}
-            </p>
-          </div>
-        </CardFooter>
-      </Card>
+        </TabsContent>
 
-      <div className="text-center">
-        <Button variant="outline" onClick={() => setLocation("/")}>
-          Back to Home
-        </Button>
-      </div>
+        <TabsContent value="events" className="space-y-4 mt-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-2xl font-semibold mb-4 font-display">Events Management</h2>
+            <Button 
+              variant="outline" 
+              onClick={handleExportEvents}
+              disabled={isLoadingEvents || !events || events.length === 0}
+              className="border-primary"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Events
+            </Button>
+          </div>
+
+          {isLoadingEvents ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {events && events.map((event) => (
+                <Card key={event.id} className="overflow-hidden border-primary">
+                  <CardHeader>
+                    <div className="flex justify-between">
+                      <div>
+                        <CardTitle>{event.title}</CardTitle>
+                        <CardDescription>{new Date(event.date).toLocaleDateString()}</CardDescription>
+                      </div>
+                      {event.featured && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md text-xs">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="font-medium">Location:</span> {event.location}
+                      </div>
+                      <div>
+                        <span className="font-medium">Address:</span> {event.address}
+                      </div>
+                      <div>
+                        <span className="font-medium">Organizer ID:</span> {event.organizedById}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tickets" className="space-y-4 mt-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-2xl font-semibold mb-4 font-display">Ticket Sales</h2>
+            <Button 
+              variant="outline" 
+              onClick={handleExportTickets}
+              disabled={isLoadingTickets || !tickets || tickets.length === 0}
+              className="border-primary"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Ticket Sales
+            </Button>
+          </div>
+
+          {isLoadingTickets ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {tickets && tickets.map((ticket) => (
+                <Card key={ticket.id} className="overflow-hidden border-primary">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Ticket #{ticket.id}</CardTitle>
+                        <CardDescription>Ref: {ticket.referenceNumber}</CardDescription>
+                      </div>
+                      <div className="text-lg font-semibold">${ticket.totalPrice || '0.00'}</div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="font-medium">Event ID:</span> {ticket.eventId}
+                      </div>
+                      <div>
+                        <span className="font-medium">User ID:</span> {ticket.userId}
+                      </div>
+                      <div>
+                        <span className="font-medium">Purchased:</span>{" "}
+                        {new Date(ticket.purchaseDate).toLocaleDateString()}
+                      </div>
+                      <div>
+                        <span className="font-medium">Quantity:</span> {ticket.quantity}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

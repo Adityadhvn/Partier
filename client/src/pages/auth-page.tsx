@@ -6,10 +6,12 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+// Import party background image
+import partyBgImage from "../assets/party-background.gif";
 
 // Create validation schemas
 const loginSchema = z.object({
@@ -71,20 +73,44 @@ export default function AuthPage() {
     });
   };
 
+  // Custom styling for background with gif overlay
+  const containerStyle = {
+    backgroundImage: `url(${partyBgImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
+
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-neutral-900 border-primary/20">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-primary">Welcome to PARTIER</CardTitle>
-            <CardDescription>Your premier Club Ticket booking platform</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
-              <TabsList className="grid w-full grid-cols-2 mb-8">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+    <div className="min-h-screen flex items-center justify-center p-4" style={containerStyle}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      
+      <div className="w-full max-w-md flex flex-col md:flex-row relative z-10 bg-transparent">
+        {/* Left side - branding */}
+        <div className="w-full md:w-1/2 p-8 flex flex-col justify-center items-center md:items-end">
+          <div className="text-right mb-4">
+            <h1 className="text-5xl font-bold text-white mb-2" style={{fontFamily: "'Great Vibes', cursive"}}>Partier</h1>
+            <p className="text-xl text-white/80 font-light">Your gateway to exclusive events</p>
+          </div>
+        </div>
+        
+        {/* Right side - form */}
+        <Card className="w-full md:w-1/2 border-none bg-black/75 backdrop-blur-lg rounded-xl overflow-hidden shadow-2xl">
+          <CardContent className="p-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-black/50">
+                <TabsTrigger 
+                  value="login" 
+                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                >
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register"
+                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                >
+                  Sign Up
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -95,11 +121,14 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="username" {...field} />
+                            <Input 
+                              placeholder="Username" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -108,26 +137,30 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="bhauk na laude" {...field} />
+                            <Input 
+                              type="password" 
+                              placeholder="Password" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
                     <Button 
                       type="submit" 
-                      className="w-full mt-6" 
+                      className="w-full h-12 mt-6 font-medium" 
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Logging in...
+                          Signing In...
                         </>
                       ) : (
-                        "Login"
+                        "Sign In"
                       )}
                     </Button>
                   </form>
@@ -142,11 +175,14 @@ export default function AuthPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input 
+                              placeholder="Full Name" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -155,11 +191,15 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="your@email.com" {...field} />
+                            <Input 
+                              type="email" 
+                              placeholder="Email" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -168,11 +208,14 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="username" {...field} />
+                            <Input 
+                              placeholder="Username" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
@@ -181,23 +224,27 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="........" {...field} />
+                            <Input 
+                              type="password" 
+                              placeholder="Password" 
+                              {...field} 
+                              className="bg-black/40 border-none h-12 placeholder:text-gray-500"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs text-red-400" />
                         </FormItem>
                       )}
                     />
                     <Button 
                       type="submit" 
-                      className="w-full mt-6" 
+                      className="w-full h-12 mt-6 font-medium" 
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          Creating Account...
                         </>
                       ) : (
                         "Create Account"
@@ -208,33 +255,12 @@ export default function AuthPage() {
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter className="flex justify-center text-sm text-muted-foreground">
-            Protected by LUXE encryption
+          <CardFooter className="pb-6 pt-0 px-6">
+            <p className="text-xs text-center w-full text-gray-400">
+              By signing in, you agree to our Terms of Service and Privacy Policy
+            </p>
           </CardFooter>
         </Card>
-      </div>
-
-      {/* Hero Section */}
-      <div className="hidden md:flex flex-1 bg-gradient-to-br from-black to-neutral-800 items-center justify-center p-10">
-        <div className="max-w-md text-center">
-          <h1 className="font-serif text-4xl mb-6 text-primary">
-            <span className="font-greatVibes text-5xl block mb-2">LUXE</span>
-            Exclusive Events Await
-          </h1>
-          <p className="text-lg mb-8">
-            Experience the finest nightlife with premium access to top clubs, events, and performances.
-          </p>
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-black/50 p-4 rounded-lg border border-primary/20">
-              <h3 className="font-medium text-primary">Seamless Access</h3>
-              <p className="text-sm mt-1">Skip the line with mobile tickets</p>
-            </div>
-            <div className="bg-black/50 p-4 rounded-lg border border-primary/20">
-              <h3 className="font-medium text-primary">Exclusive Events</h3>
-              <p className="text-sm mt-1">VIP access to premium venues</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

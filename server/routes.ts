@@ -6,7 +6,6 @@ import { insertUserSchema, insertEventSchema, insertTicketTypeSchema, insertPerf
 import fs from 'fs';
 import path from 'path';
 import { createObjectCsvWriter } from 'csv-writer';
-import * as ExcelJS from 'exceljs';
 import { randomUUID } from "crypto";
 
 // Middleware to ensure user is authenticated
@@ -208,6 +207,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ticket routes
+  // Get all tickets - restricted to admin/organizer
+  app.get("/api/tickets/all", ensureOrganizer, async (req, res) => {
+    try {
+      const tickets = await storage.getAllTickets();
+      res.status(200).json(tickets);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch all tickets", error });
+    }
+  });
+  
   app.get("/api/tickets/user/:userId", ensureAuthenticated, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -313,43 +322,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "No users found" });
       }
 
-      // Create Excel workbook
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Users');
-      
-      // Add columns
-      worksheet.columns = [
-        { header: 'ID', key: 'id', width: 10 },
-        { header: 'Username', key: 'username', width: 20 },
-        { header: 'Email', key: 'email', width: 30 },
-        { header: 'Full Name', key: 'fullName', width: 30 },
-        { header: 'Is Organizer', key: 'isOrganizer', width: 15 },
-        { header: 'Created At', key: 'createdAt', width: 20 }
-      ];
-      
-      // Add rows
-      users.forEach(user => {
-        const userData = {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          isOrganizer: user.isOrganizer ? 'Yes' : 'No',
-          createdAt: 'N/A' // User type doesn't have createdAt, but we can include it for the export
-        };
-        worksheet.addRow(userData);
-      });
-      
-      // Apply styles
-      worksheet.getRow(1).font = { bold: true };
-      
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `users_export_${timestamp}.xlsx`;
+      const filename = `users_export_${timestamp}.csv`;
       const filePath = path.join(exportDir, filename);
       
-      // Save workbook
-      await workbook.xlsx.writeFile(filePath);
+      // Setup CSV writer
+      const csvWriter = createObjectCsvWriter({
+        path: filePath,
+        header: [
+          { id: 'id', title: 'ID' },
+          { id: 'username', title: 'Username' },
+          { id: 'email', title: 'Email' },
+          { id: 'fullName', title: 'Full Name' },
+          { id: 'isOrganizer', title: 'Is Organizer' },
+          { id: 'isSuperAdmin', title: 'Is Super Admin' }
+        ]
+      });
+      
+      // Format user data for CSV
+      const csvRecords = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        isOrganizer: user.isOrganizer ? 'Yes' : 'No',
+        isSuperAdmin: user.isSuperAdmin ? 'Yes' : 'No'
+      }));
+      
+      // Write to CSV file
+      await csvWriter.writeRecords(csvRecords);
       
       // Send file
       res.download(filePath, filename, (err) => {
@@ -450,6 +452,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users", error });
+    }
+  });
+  
+  // Create new organizer (super admin only)
+  app.post("/api/organizers", ensureSuperAdmin, async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Set isOrganizer to true to ensure the user is created as an organizer
+      const organizerData = {
+        ...userData,
+        isOrganizer: true
+      };
+      
+      const user = await storage.createUser(organizerData);
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid user data", error });
+    }
+  });
+  
+  // Update user (for organizer status toggle and other updates)
+  app.patch("/api/users/:id", ensureSuperAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get the user to update
+      const existingUser = await storage.getUser(userId);
+      
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update the user with new data
+      const updatedUser = await storage.updateUser(userId, req.body);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+      
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update user", error });
     }
   });
 

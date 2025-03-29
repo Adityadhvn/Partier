@@ -5,6 +5,11 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Poppins", "sans-serif"],
+        display: ["Playfair Display", "serif"],
+        calligraphy: ["Great Vibes", "cursive"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
