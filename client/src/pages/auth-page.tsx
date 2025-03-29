@@ -110,7 +110,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input type="password" placeholder="bhauk na laude" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -183,7 +183,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input type="password" placeholder="........" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

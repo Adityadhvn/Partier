@@ -2,8 +2,6 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import createMemoryStore from "memorystore";
@@ -15,19 +13,15 @@ declare global {
 }
 
 const MemoryStore = createMemoryStore(session);
-const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+// Simple function to directly hash a password (just for demo)
+function hashPassword(password: string) {
+  return password; // No hashing, direct storage
 }
 
-async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+// Simple password comparison without hashing
+function comparePasswords(supplied: string, stored: string) {
+  return supplied === stored; // Direct comparison
 }
 
 export function setupAuth(app: Express) {
@@ -88,7 +82,7 @@ export function setupAuth(app: Express) {
 
       const user = await storage.createUser({
         ...req.body,
-        password: await hashPassword(req.body.password),
+        password: req.body.password, // No hashing, direct storage
       });
 
       req.login(user, (err) => {

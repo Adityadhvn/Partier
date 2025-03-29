@@ -320,8 +320,8 @@ export class MemStorage implements IStorage {
     const user1: User = {
       id: this.userIdCounter++,
       username: "adityadhawan",
-      // Simple password for demo purposes - this is "Gokussj3@"
-      password: "5c29a959abce4eda5f0e7a4e7ea53dce743efe9d3be219487d7db66156019f3ff57f2f1e1c54a5bed4575938d7a224d2f62c4f8bff9ab76d4fb9e3d4a9f26a0c.e392c0bed66c6adaba4b3993e2db67c4",
+      // Plain text password for demo purposes
+      password: "Gokussj3@",
       email: "admin@example.com",
       fullName: "Aditya Dhawan",
       isOrganizer: true,
@@ -331,8 +331,8 @@ export class MemStorage implements IStorage {
     const user2: User = {
       id: this.userIdCounter++,
       username: "eventorganizer",
-      // Simple password for demo purposes - this is "password123"
-      password: "b912620e08c6ea210c1368108026abef125a33a82852b6c4582495358d05e1fac1b70f306e41233e5a2b75aedc301e692e35a0ef23f85d50055ba343bcd0ea47.d44cdf2f3aac9984",
+      // Plain text password for demo purposes
+      password: "password123",
       email: "organizer@example.com",
       fullName: "Event Organizer",
       isOrganizer: true,
@@ -342,8 +342,8 @@ export class MemStorage implements IStorage {
     const adminUser: User = {
       id: this.userIdCounter++,
       username: "admin",
-      // Simple password for demo purposes - this is "admin"
-      password: "c7ad44cbad762a5da0a452f9e854fdc1e0e7a52a38015f23f3eab1d80b931dd472634dfac71cd34ebc35d16ab7fb8a90c81f975113d6c7538dc69dd8de9077ec.d9bdb0cbee1f73d8",
+      // Plain text password for demo purposes
+      password: "admin",
       email: "admin2@example.com",
       fullName: "Admin User",
       isOrganizer: true,
