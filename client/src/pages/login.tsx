@@ -82,7 +82,7 @@ export default function Login() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  };admin
 
   // Handle signup submission
   const handleSignup = async (e: React.FormEvent) => {

@@ -77,8 +77,8 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6">
         <Card className="w-full max-w-md bg-neutral-900 border-primary/20">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-primary">Welcome to LUXE</CardTitle>
-            <CardDescription>Your premier ticket booking platform</CardDescription>
+            <CardTitle className="text-2xl font-bold text-primary">Welcome to PARTIER</CardTitle>
+            <CardDescription>Your premier Club Ticket booking platform</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
