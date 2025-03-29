@@ -320,8 +320,8 @@ export class MemStorage implements IStorage {
     const user1: User = {
       id: this.userIdCounter++,
       username: "adityadhawan",
-      // Use a pre-hashed version of "Gokussj3@" to prevent the login error
-      password: "d1c1d3f6193d5e1922a4aabefc5d9c7c2f3e0bf0fe36d16af28aa3eee27d4516ba584e1acb1a5f28b4560b6a40572980afd2a38e47e71b182afc099d0d6fbe02.b1f941fd4855ddcc51bb4a8d5a0f5a70",
+      // Simple password for demo purposes - this is "Gokussj3@"
+      password: "5c29a959abce4eda5f0e7a4e7ea53dce743efe9d3be219487d7db66156019f3ff57f2f1e1c54a5bed4575938d7a224d2f62c4f8bff9ab76d4fb9e3d4a9f26a0c.e392c0bed66c6adaba4b3993e2db67c4",
       email: "admin@example.com",
       fullName: "Aditya Dhawan",
       isOrganizer: true,
@@ -331,7 +331,8 @@ export class MemStorage implements IStorage {
     const user2: User = {
       id: this.userIdCounter++,
       username: "eventorganizer",
-      password: "password123", // In a real app this would be hashed
+      // Simple password for demo purposes - this is "password123"
+      password: "b912620e08c6ea210c1368108026abef125a33a82852b6c4582495358d05e1fac1b70f306e41233e5a2b75aedc301e692e35a0ef23f85d50055ba343bcd0ea47.d44cdf2f3aac9984",
       email: "organizer@example.com",
       fullName: "Event Organizer",
       isOrganizer: true,
@@ -341,8 +342,8 @@ export class MemStorage implements IStorage {
     const adminUser: User = {
       id: this.userIdCounter++,
       username: "admin",
-      // Use a pre-hashed version of "admin" to prevent login errors
-      password: "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b2b6c9d7a31639196a31fc0444335633c5950fe7afba78f2a12b84b3445844a13.f2b31229905d4f16",
+      // Simple password for demo purposes - this is "admin"
+      password: "c7ad44cbad762a5da0a452f9e854fdc1e0e7a52a38015f23f3eab1d80b931dd472634dfac71cd34ebc35d16ab7fb8a90c81f975113d6c7538dc69dd8de9077ec.d9bdb0cbee1f73d8",
       email: "admin2@example.com",
       fullName: "Admin User",
       isOrganizer: true,
