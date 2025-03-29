@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Profile() {
-  const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
 
@@ -39,26 +39,30 @@ export default function Profile() {
   });
 
   const handleCreateEventClick = () => {
-    navigate("/create-event");
+    setLocation("/create-event");
   };
 
   const handleEditEventClick = (eventId: number) => {
-    navigate(`/edit-event/${eventId}`);
+    setLocation(`/edit-event/${eventId}`);
     // Note: The edit-event route and page would need to be implemented separately
   };
 
   const handleViewEventClick = (eventId: number) => {
-    navigate(`/event/${eventId}`);
+    setLocation(`/event/${eventId}`);
   };
 
   const handleScannerClick = () => {
-    navigate("/scanner");
+    setLocation("/scanner");
+  };
+  
+  const handleAdminPanelClick = () => {
+    setLocation("/admin-panel");
   };
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
-        navigate("/auth");
+        setLocation("/auth");
         toast({
           title: "Logged out",
           description: "You have been successfully logged out.",
@@ -71,6 +75,8 @@ export default function Profile() {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     return format(date, 'MMM d, yyyy');
   };
+  
+  // Fix all instances of navigate to use setLocation
 
   return (
     <div className="flex-1 flex flex-col pb-20">
@@ -97,6 +103,43 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Super Admin Options */}
+        {user?.isSuperAdmin && (
+          <div className="mb-6">
+            <h3 className="font-medium text-neutral-400 uppercase text-sm mb-3">
+              Super Admin
+            </h3>
+            <div className="bg-neutral-800 rounded-xl overflow-hidden">
+              <button
+                className="w-full py-4 px-4 flex items-center justify-between text-white"
+                onClick={handleAdminPanelClick}
+              >
+                <div className="flex items-center">
+                  <span className="bg-gradient-to-r from-primary to-amber-500 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-black"
+                    >
+                      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path>
+                      <path d="M12 8v8"></path>
+                      <path d="M12 16v.1"></path>
+                    </svg>
+                  </span>
+                  <span>Admin Panel</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-neutral-500" />
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Organizer Options (conditionally shown) */}
         {user?.isOrganizer && (
           <div className="mb-6">

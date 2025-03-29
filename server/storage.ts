@@ -25,6 +25,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
 
   // Event operations
@@ -123,11 +124,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    // Ensure isOrganizer is a boolean (default to false if undefined)
+    // Ensure isOrganizer and isSuperAdmin are boolean (default to false if undefined)
     const user: User = {
       ...insertUser,
       id,
       isOrganizer: insertUser.isOrganizer === true,
+      isSuperAdmin: insertUser.isSuperAdmin === true,
     };
     this.users.set(id, user);
     return user;
@@ -135,6 +137,15 @@ export class MemStorage implements IStorage {
 
   async getUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+  
+  async updateUser(id: number, userUpdate: Partial<InsertUser>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+
+    const updatedUser = { ...user, ...userUpdate };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Event operations
@@ -309,10 +320,12 @@ export class MemStorage implements IStorage {
     const user1: User = {
       id: this.userIdCounter++,
       username: "adityadhawan",
-      password: "Gokussj3@", // In a real app this would be hashed
-      email: "john@example.com",
-      fullName: "John Smith",
-      isOrganizer: false,
+      // Use a pre-hashed version of "Gokussj3@" to prevent the login error
+      password: "d1c1d3f6193d5e1922a4aabefc5d9c7c2f3e0bf0fe36d16af28aa3eee27d4516ba584e1acb1a5f28b4560b6a40572980afd2a38e47e71b182afc099d0d6fbe02.b1f941fd4855ddcc51bb4a8d5a0f5a70",
+      email: "admin@example.com",
+      fullName: "Aditya Dhawan",
+      isOrganizer: true,
+      isSuperAdmin: true, // Special role for managing organizers
     };
 
     const user2: User = {
@@ -322,15 +335,18 @@ export class MemStorage implements IStorage {
       email: "organizer@example.com",
       fullName: "Event Organizer",
       isOrganizer: true,
+      isSuperAdmin: false,
     };
 
     const adminUser: User = {
       id: this.userIdCounter++,
       username: "admin",
-      password: "Gokussj3@", // In a real app this would be hashed
-      email: "admin@example.com",
+      // Use a pre-hashed version of "admin" to prevent login errors
+      password: "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b2b6c9d7a31639196a31fc0444335633c5950fe7afba78f2a12b84b3445844a13.f2b31229905d4f16",
+      email: "admin2@example.com",
       fullName: "Admin User",
       isOrganizer: true,
+      isSuperAdmin: false,
     };
 
     this.users.set(user1.id, user1);

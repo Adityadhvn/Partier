@@ -25,6 +25,14 @@ function ensureOrganizer(req: Request, res: Response, next: NextFunction) {
   return res.status(403).json({ message: "Forbidden - Requires organizer role" });
 }
 
+// Middleware to ensure user is a super admin
+function ensureSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated() && req.user.isSuperAdmin) {
+    return next();
+  }
+  return res.status(403).json({ message: "Forbidden - Requires super admin role" });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -432,6 +440,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting tickets:", error);
       res.status(500).json({ message: "Failed to export tickets", error });
+    }
+  });
+
+  // Super Admin routes for managing organizer access
+  app.get("/api/users", ensureSuperAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users", error });
+    }
+  });
+
+  // Update user organizer status
+  app.put("/api/users/:id/organizer-status", ensureSuperAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const { isOrganizer } = req.body;
+      
+      if (typeof isOrganizer !== 'boolean') {
+        return res.status(400).json({ message: "isOrganizer must be a boolean value" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update the user with the new organizer status
+      const updatedUser = await storage.updateUser(userId, { isOrganizer });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+      
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update organizer status", error });
     }
   });
 

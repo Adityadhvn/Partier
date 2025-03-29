@@ -15,6 +15,7 @@ import Scanner from "@/pages/scanner";
 import CreateEvent from "@/pages/create-event";
 import Login from "@/pages/login";
 import ManageEvents from "@/pages/manage-events";
+import AdminPanel from "@/pages/admin-panel";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -33,10 +34,11 @@ function Router() {
       <ProtectedRoute path="/scanner" component={Scanner} />
       <ProtectedRoute path="/create-event" component={CreateEvent} />
       <ProtectedRoute path="/manage-events" component={ManageEvents} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/login" component={Login} />
+      <ProtectedRoute path="/admin-panel" component={AdminPanel} />
+      <Route path="/auth">{() => <AuthPage />}</Route>
+      <Route path="/login">{() => <Login />}</Route>
       {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      <Route path="*">{() => <NotFound />}</Route>
     </Switch>
   );
 }

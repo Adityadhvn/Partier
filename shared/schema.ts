@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(),
   isOrganizer: boolean("is_organizer").default(false).notNull(),
+  isSuperAdmin: boolean("is_super_admin").default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
