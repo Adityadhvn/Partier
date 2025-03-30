@@ -56,7 +56,7 @@ export default function AuthPage() {
   // Redirect if user is already logged in
   if (user) {
     navigate("/");
-    return null;
+    return null;s
   }
 
   const onLoginSubmit = (values: LoginValues) => {
@@ -88,9 +88,9 @@ export default function AuthPage() {
       <div className="w-full max-w-md flex flex-col md:flex-row relative z-10 bg-transparent">
         {/* Left side - branding */}
         <div className="w-full md:w-1/2 p-8 flex flex-col justify-center items-center md:items-end">
-          <div className="text-right mb-4">
-            <h1 className="text-5xl font-bold text-white mb-2" style={{fontFamily: "'Great Vibes', cursive"}}>Partier</h1>
-            <p className="text-xl text-white/80 font-light">Your gateway to exclusive events</p>
+          <div className="text-center mb-4">
+            <h1 className="text-7xl font-bold text-white mb-2" style={{fontFamily: "'Great Vibes', cursive"}}>Partier</h1>
+            <p className="text-xl text-white/80 font-light"> By A & A</p>
           </div>
         </div>
         

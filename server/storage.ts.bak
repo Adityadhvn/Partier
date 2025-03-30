@@ -20,9 +20,7 @@ import { db, pool } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import createMemoryStore from "memorystore";
 
-const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
@@ -72,6 +70,10 @@ export interface IStorage {
   // Session store for authentication
   sessionStore: session.Store;
 }
+
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
@@ -513,29 +515,32 @@ export class MemStorage implements IStorage {
     // Create sample performers
     const performer1: Performer = {
       id: this.performerIdCounter++,
-      name: "DJ Catalyst",
-      imageUrl: "https://images.unsplash.com/photo-1601042879364-f3947d3f9c16",
       eventId: event1.id,
-      time: "22:00 - 23:30",
+      name: "DJ Pulse",
+      imageUrl:
+        "https://images.unsplash.com/photo-1499364615650-ec38552f4f34?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1772&q=80",
+      time: "10:00 PM",
       isHeadliner: true,
     };
 
     const performer2: Performer = {
       id: this.performerIdCounter++,
-      name: "Synthwave Collective",
-      imageUrl: "https://images.unsplash.com/photo-1563841930606-67e2bce48b78",
       eventId: event1.id,
-      time: "20:30 - 22:00",
+      name: "Electra",
+      imageUrl:
+        "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80",
+      time: "9:00 PM",
       isHeadliner: false,
     };
 
     const performer3: Performer = {
       id: this.performerIdCounter++,
-      name: "Techno Pioneers",
-      imageUrl: "https://images.unsplash.com/photo-1571266692345-8c7c0c6c8084",
-      eventId: event2.id,
-      time: "23:00 - 01:00",
-      isHeadliner: true,
+      eventId: event1.id,
+      name: "Synthesize",
+      imageUrl:
+        "https://images.unsplash.com/photo-1493676304819-0d7a8d026dcf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+      time: "8:00 PM",
+      isHeadliner: false,
     };
 
     this.performers.set(performer1.id, performer1);
@@ -545,14 +550,20 @@ export class MemStorage implements IStorage {
     // Create a sample ticket
     const ticket1: Ticket = {
       id: this.ticketIdCounter++,
-      eventId: event1.id,
       userId: user1.id,
+      eventId: event1.id,
       ticketTypeId: ticketType1.id,
-      quantity: 2,
-      totalPrice: "90.00",
-      status: "confirmed",
-      purchaseDate: new Date("2023-05-15"),
-      referenceNumber: "TIX12345",
+      quantity: 1,
+      totalPrice: "53.50", // Price + fees
+      purchaseDate: new Date("2023-06-02T14:30:00"),
+      referenceNumber: "NEO-1234567890",
+      paymentDetails: {
+        method: "Credit Card",
+        last4: "4242",
+        subtotal: "45.00",
+        serviceFee: "5.00",
+        tax: "3.50",
+      },
     };
 
     this.tickets.set(ticket1.id, ticket1);
@@ -560,6 +571,7 @@ export class MemStorage implements IStorage {
 }
 
 // Database Storage Implementation
+
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
@@ -669,24 +681,15 @@ export class DatabaseStorage implements IStorage {
   async createTicketType(insertTicketType: InsertTicketType): Promise<TicketType> {
     const [ticketType] = await db
       .insert(ticketTypes)
-      .values({
-        ...insertTicketType,
-        price: String(insertTicketType.price)
-      })
+      .values(insertTicketType)
       .returning();
     return ticketType;
   }
 
   async updateTicketType(id: number, ticketTypeUpdate: Partial<InsertTicketType>): Promise<TicketType | undefined> {
-    // Handle price conversion if it exists in the update
-    const updateData: Partial<InsertTicketType> = { ...ticketTypeUpdate };
-    if (updateData.price !== undefined) {
-      updateData.price = String(updateData.price);
-    }
-
     const [ticketType] = await db
       .update(ticketTypes)
-      .set(updateData)
+      .set(ticketTypeUpdate)
       .where(eq(ticketTypes.id, id))
       .returning();
     return ticketType;
@@ -757,12 +760,16 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(events)
-      .where(eq(events.organizedById, organizerId))
+      .where(eq(events.organizerId, organizerId))
       .orderBy(desc(events.date));
   }
 }
+
+// Use in-memory storage for development, database for production
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Default to database storage if DATABASE_URL is defined, otherwise use memory storage
 export const storage = process.env.DATABASE_URL
   ? new DatabaseStorage()
   : new MemStorage();
+

@@ -39,7 +39,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { User, InsertUser, Event, Ticket } from "@shared/schema";
 import { Loader2, Download, Users, Calendar, TicketIcon } from "lucide-react";
-import { exportUsersToCsv, exportTicketSalesToCSV, exportEventsToCsv } from "@/lib/export-utils";
+import {
+  exportUsersToCsv,
+  exportTicketSalesToCSV,
+  exportEventsToCsv,
+} from "@/lib/export-utils";
 
 // Schema for adding a new organizer
 const addOrganizerSchema = z.object({
@@ -63,25 +67,25 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isAddOrganizerOpen, setIsAddOrganizerOpen] = useState(false);
-  
+
   // Redirect if not admin
   if (user && !user.isSuperAdmin && !user.isOrganizer) {
     window.location.href = "/";
     return null;
   }
-  
+
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
-  
+
   const { data: events, isLoading: isLoadingEvents } = useQuery<Event[]>({
     queryKey: ["/api/events"],
   });
-  
+
   const { data: tickets, isLoading: isLoadingTickets } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets/all"],
   });
-  
+
   const addOrganizerMutation = useMutation({
     mutationFn: async (data: InsertUser) => {
       const response = await apiRequest("POST", "/api/organizers", data);
@@ -103,7 +107,7 @@ export default function AdminPanel() {
       });
     },
   });
-  
+
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
       const response = await apiRequest("PATCH", `/api/users/${id}`, data);
@@ -124,7 +128,7 @@ export default function AdminPanel() {
       });
     },
   });
-  
+
   const form = useForm<AddOrganizerValues>({
     resolver: zodResolver(addOrganizerSchema),
     defaultValues: {
@@ -134,7 +138,7 @@ export default function AdminPanel() {
       fullName: "",
     },
   });
-  
+
   function onSubmit(values: AddOrganizerValues) {
     addOrganizerMutation.mutate({
       ...values,
@@ -142,7 +146,7 @@ export default function AdminPanel() {
       isSuperAdmin: false,
     });
   }
-  
+
   const handleExportUsers = () => {
     if (users && users.length > 0) {
       exportUsersToCsv(users);
@@ -158,7 +162,7 @@ export default function AdminPanel() {
       });
     }
   };
-  
+
   const handleExportTickets = () => {
     if (tickets && tickets.length > 0 && events && events.length > 0) {
       exportTicketSalesToCSV(tickets, events);
@@ -174,10 +178,10 @@ export default function AdminPanel() {
       });
     }
   };
-  
+
   const handleExportEvents = () => {
     if (events && events.length > 0 && users) {
-      const organizers = users.filter(u => u.isOrganizer);
+      const organizers = users.filter((u) => u.isOrganizer);
       exportEventsToCsv(events, organizers);
       toast({
         title: "Export Successful",
@@ -191,13 +195,29 @@ export default function AdminPanel() {
       });
     }
   };
-  
-  const handleToggleOrganizer = (user: User) => {
-    if (user.isSuperAdmin) return; // Don't allow toggling super admin
 
-    updateUserMutation.mutate({
-      id: user.id,
-      data: { isOrganizer: !user.isOrganizer },
+  const handleToggleOrganizer = (user: User) => {
+    // Don't allow toggling super admin privileges
+    if (user.isSuperAdmin) return;
+    
+    // Show confirmation toast before changing status
+    toast({
+      title: user.isOrganizer ? "Removing organizer privileges" : "Granting organizer privileges",
+      description: `Are you sure you want to ${user.isOrganizer ? 'remove' : 'grant'} organizer privileges for ${user.fullName}?`,
+      action: (
+        <Button
+          onClick={() => {
+            updateUserMutation.mutate({
+              id: user.id,
+              data: { isOrganizer: !user.isOrganizer },
+            });
+          }}
+          variant="default"
+          className="bg-primary text-black border-none"
+        >
+          Confirm
+        </Button>
+      ),
     });
   };
 
@@ -205,11 +225,11 @@ export default function AdminPanel() {
     <div className="container py-10">
       <h1 className="text-4xl font-bold mb-2 font-display relative">
         Admin Panel
-        <span className="text-primary text-4xl font-calligraphy absolute -right-10 -top-3 italic transform rotate-12">Luxury</span>
+        <span className="text-primary text-4xl font-calligraphy absolute -right-5 -top-3 italic transform ">
+          f off
+        </span>
       </h1>
-      <p className="text-gray-400 mb-6">
-        Manage users, events, and system settings
-      </p>
+      <p className="text-gray-400 mb-6">Manage users, events, and settings</p>
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList>
@@ -229,12 +249,20 @@ export default function AdminPanel() {
 
         <TabsContent value="users" className="space-y-4 mt-6">
           <div className="flex justify-between mb-4">
-            <h2 className="text-2xl font-semibold mb-4 font-display">User Management</h2>
+            <h2 className="text-2xl font-semibold mb-4 font-display">
+              User Management
+            </h2>
             <div className="flex gap-4">
               {user?.isSuperAdmin && (
-                <Dialog open={isAddOrganizerOpen} onOpenChange={setIsAddOrganizerOpen}>
+                <Dialog
+                  open={isAddOrganizerOpen}
+                  onOpenChange={setIsAddOrganizerOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="secondary" className="btn-hover-effect bg-primary text-black font-semibold border-none">
+                    <Button
+                      variant="secondary"
+                      className="btn-hover-effect bg-primary text-black font-semibold border-none"
+                    >
                       Add Organizer
                     </Button>
                   </DialogTrigger>
@@ -246,7 +274,10 @@ export default function AdminPanel() {
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <form
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        className="space-y-4"
+                      >
                         <FormField
                           control={form.control}
                           name="username"
@@ -316,9 +347,9 @@ export default function AdminPanel() {
                   </DialogContent>
                 </Dialog>
               )}
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 onClick={handleExportUsers}
                 disabled={isLoadingUsers || !users || users.length === 0}
                 className="border-primary"
@@ -335,66 +366,78 @@ export default function AdminPanel() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {users && users.map((user) => (
-                <Card key={user.id} className="overflow-hidden border-primary">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between">
-                      <div>
-                        <CardTitle>{user.fullName}</CardTitle>
-                        <CardDescription>{user.email}</CardDescription>
+              {users &&
+                users.map((user) => (
+                  <Card
+                    key={user.id}
+                    className="overflow-hidden border-primary"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between">
+                        <div>
+                          <CardTitle>{user.fullName}</CardTitle>
+                          <CardDescription>{user.email}</CardDescription>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {user.isSuperAdmin ? (
+                            <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-md text-xs">
+                              Super Admin
+                            </span>
+                          ) : user.isOrganizer ? (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+                              Organizer
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+                              User
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {user.isSuperAdmin ? (
-                          <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-md text-xs">
-                            Super Admin
-                          </span>
-                        ) : user.isOrganizer ? (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
-                            Organizer
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-                            User
-                          </span>
-                        )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm text-gray-500">
+                        Username:{" "}
+                        <span className="font-medium">{user.username}</span>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-gray-500">
-                      Username: <span className="font-medium">{user.username}</span>
-                    </div>
-                  </CardContent>
-                  {user?.isSuperAdmin && (
-                    <CardFooter className="border-t pt-4 bg-gray-50">
+                    </CardContent>
+                    <CardFooter className="border-t pt-4 bg-gray-50 flex justify-between">
                       <div className="flex items-center">
-                        <Checkbox
-                          id={`organizer-${user.id}`}
-                          checked={user.isOrganizer}
-                          onCheckedChange={() => handleToggleOrganizer(user)}
-                          disabled={user.isSuperAdmin || !user?.isSuperAdmin}
-                          className="mr-2"
-                        />
-                        <label
-                          htmlFor={`organizer-${user.id}`}
-                          className="text-sm cursor-pointer"
-                        >
-                          Organizer Status
-                        </label>
+                        <span className="text-sm">
+                          User ID: {user.id}
+                        </span>
                       </div>
+                      
+                      {user?.isSuperAdmin ? (
+                        <span className="text-xs text-gray-500 italic">Super admin privileges cannot be modified</span>
+                      ) : (
+                        <Button
+                          variant={user.isOrganizer ? "destructive" : "secondary"}
+                          onClick={() => handleToggleOrganizer(user)}
+                          disabled={updateUserMutation.isPending}
+                          className="text-xs"
+                          size="sm"
+                        >
+                          {updateUserMutation.isPending && (
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          )}
+                          {user.isOrganizer ? "Remove Organizer Privileges" : "Grant Organizer Privileges"}
+                        </Button>
+                      )}
                     </CardFooter>
-                  )}
-                </Card>
-              ))}
+                  </Card>
+                ))}
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="events" className="space-y-4 mt-6">
           <div className="flex justify-between mb-4">
-            <h2 className="text-2xl font-semibold mb-4 font-display">Events Management</h2>
-            <Button 
-              variant="outline" 
+            <h2 className="text-2xl font-semibold mb-4 font-display">
+              Events Management
+            </h2>
+            <Button
+              variant="outline"
               onClick={handleExportEvents}
               disabled={isLoadingEvents || !events || events.length === 0}
               className="border-primary"
@@ -410,45 +453,56 @@ export default function AdminPanel() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {events && events.map((event) => (
-                <Card key={event.id} className="overflow-hidden border-primary">
-                  <CardHeader>
-                    <div className="flex justify-between">
-                      <div>
-                        <CardTitle>{event.title}</CardTitle>
-                        <CardDescription>{new Date(event.date).toLocaleDateString()}</CardDescription>
+              {events &&
+                events.map((event) => (
+                  <Card
+                    key={event.id}
+                    className="overflow-hidden border-primary"
+                  >
+                    <CardHeader>
+                      <div className="flex justify-between">
+                        <div>
+                          <CardTitle>{event.title}</CardTitle>
+                          <CardDescription>
+                            {new Date(event.date).toLocaleDateString()}
+                          </CardDescription>
+                        </div>
+                        {event.featured && (
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md text-xs">
+                            Featured
+                          </span>
+                        )}
                       </div>
-                      {event.featured && (
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md text-xs">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="font-medium">Location:</span> {event.location}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="font-medium">Location:</span>{" "}
+                          {event.location}
+                        </div>
+                        <div>
+                          <span className="font-medium">Address:</span>{" "}
+                          {event.address}
+                        </div>
+                        <div>
+                          <span className="font-medium">Organizer ID:</span>{" "}
+                          {event.organizedById}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Address:</span> {event.address}
-                      </div>
-                      <div>
-                        <span className="font-medium">Organizer ID:</span> {event.organizedById}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="tickets" className="space-y-4 mt-6">
           <div className="flex justify-between mb-4">
-            <h2 className="text-2xl font-semibold mb-4 font-display">Ticket Sales</h2>
-            <Button 
-              variant="outline" 
+            <h2 className="text-2xl font-semibold mb-4 font-display">
+              Ticket Sales
+            </h2>
+            <Button
+              variant="outline"
               onClick={handleExportTickets}
               disabled={isLoadingTickets || !tickets || tickets.length === 0}
               className="border-primary"
@@ -464,36 +518,47 @@ export default function AdminPanel() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {tickets && tickets.map((ticket) => (
-                <Card key={ticket.id} className="overflow-hidden border-primary">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>Ticket #{ticket.id}</CardTitle>
-                        <CardDescription>Ref: {ticket.referenceNumber}</CardDescription>
+              {tickets &&
+                tickets.map((ticket) => (
+                  <Card
+                    key={ticket.id}
+                    className="overflow-hidden border-primary"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle>Ticket #{ticket.id}</CardTitle>
+                          <CardDescription>
+                            Ref: {ticket.referenceNumber}
+                          </CardDescription>
+                        </div>
+                        <div className="text-lg font-semibold">
+                          ${ticket.totalPrice || "0.00"}
+                        </div>
                       </div>
-                      <div className="text-lg font-semibold">${ticket.totalPrice || '0.00'}</div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="font-medium">Event ID:</span> {ticket.eventId}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="font-medium">Event ID:</span>{" "}
+                          {ticket.eventId}
+                        </div>
+                        <div>
+                          <span className="font-medium">User ID:</span>{" "}
+                          {ticket.userId}
+                        </div>
+                        <div>
+                          <span className="font-medium">Purchased:</span>{" "}
+                          {new Date(ticket.purchaseDate).toLocaleDateString()}
+                        </div>
+                        <div>
+                          <span className="font-medium">Quantity:</span>{" "}
+                          {ticket.quantity}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">User ID:</span> {ticket.userId}
-                      </div>
-                      <div>
-                        <span className="font-medium">Purchased:</span>{" "}
-                        {new Date(ticket.purchaseDate).toLocaleDateString()}
-                      </div>
-                      <div>
-                        <span className="font-medium">Quantity:</span> {ticket.quantity}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           )}
         </TabsContent>
