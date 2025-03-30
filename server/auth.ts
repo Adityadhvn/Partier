@@ -4,15 +4,12 @@ import { Express } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import createMemoryStore from "memorystore";
 
 declare global {
   namespace Express {
     interface User extends SelectUser {}
   }
 }
-
-const MemoryStore = createMemoryStore(session);
 
 // Simple function to directly hash a password (just for demo)
 function hashPassword(password: string) {
@@ -29,9 +26,7 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "ticket-booking-secret",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
-    }),
+    store: storage.sessionStore,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     }
